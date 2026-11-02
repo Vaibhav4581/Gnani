@@ -1,0 +1,19 @@
+{
+  "language": "hi-IN",
+  "kind": "reply",
+  "source": "synthetic-tts+noise",
+  "spoken": "नहीं, साठ प्लेट है।",
+  "expected": {
+    "answer": "correction",
+    "fields": {
+      "quantity": 60,
+      "unit": "plate"
+    }
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/10-hi-reply-correction.wav",
+    "snr_db": 10
+  }
+}

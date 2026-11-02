@@ -1,0 +1,16 @@
+{
+  "language": "ml-IN",
+  "kind": "reply",
+  "source": "synthetic-tts+noise",
+  "voice": "Riyaan",
+  "spoken": "അതെ, ശരിയാണ്.",
+  "expected": {
+    "answer": "yes"
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/13-ml-reply-yes.wav",
+    "snr_db": 10
+  }
+}

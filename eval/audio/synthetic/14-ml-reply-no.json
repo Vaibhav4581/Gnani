@@ -1,0 +1,10 @@
+{
+  "language": "ml-IN",
+  "kind": "reply",
+  "source": "synthetic-tts",
+  "voice": "Riyaan",
+  "spoken": "ഇല്ല, തെറ്റാണ്.",
+  "expected": {
+    "answer": "no"
+  }
+}

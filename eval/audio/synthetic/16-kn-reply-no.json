@@ -1,0 +1,10 @@
+{
+  "language": "kn-IN",
+  "kind": "reply",
+  "source": "synthetic-tts",
+  "voice": "Kavin",
+  "spoken": "ಇಲ್ಲ, ತಪ್ಪು.",
+  "expected": {
+    "answer": "no"
+  }
+}

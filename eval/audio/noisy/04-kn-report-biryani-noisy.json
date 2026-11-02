@@ -1,0 +1,19 @@
+{
+  "language": "kn-IN",
+  "kind": "report",
+  "source": "synthetic-tts+noise",
+  "spoken": "ಐವತ್ತು ಪ್ಲೇಟ್ ಬಿರಿಯಾನಿ ಉಳಿದಿದೆ. ಮಧ್ಯಾಹ್ನ ಎರಡು ಗಂಟೆಗೆ ಮಾಡಿದ್ದು. ಕಲೂರಿನಿಂದ.",
+  "expected": {
+    "dish": "ಬಿರಿಯಾನಿ",
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Kaloor"
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/04-kn-report-biryani.wav",
+    "snr_db": 10
+  }
+}

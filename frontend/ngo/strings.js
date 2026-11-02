@@ -1,0 +1,137 @@
+// Every word the NGO screen shows, in the shelter's language; the English set doubles as the small
+// line under bilingual buttons. Malayalam and Kannada need a native speaker's check.
+import { KOT_WORDS } from "/assets/kot-words.js";
+
+export const STRINGS = {
+  "hi-IN": {
+    today: { people: "aaj jinhe khana mila", meals: "aaj aaye plate" },
+    incoming: { title: "Raaste mein khana", finding: "Volunteer dhoondh rahe hain",
+                empty: "Abhi koi khana raaste mein nahi hai. Apni zaroorat boliye, paas ke kitchen usse jode jayenge.",
+                eta: "{v} · lagbhag {m} min", arriving: "{v} · bas pahunchne wale hain", here: "Yahan" },
+    arrival: { q: "Khana aa gaya?", yes: "Haan, aa gaya", no: "Nahi, abhi nahi",
+               hold: "Dabaakar haan ya nahi boliye" },
+    ask: { title: "Khana maangiye", hint: "Kitne logon ke liye, kab tak, aur kya sirf veg chahiye. Ek baar mein boliye.",
+           more: "Aur khana maangiye" },
+    mic: { ask: "Dabaaye rakhkar boliye", reply: "Dabaakar jawab dijiye",
+           recording: "Bol rahe hain… chhodne par bhej denge", sending: "Samajh rahe hain…" },
+    confirm: { yes: "Haan, sahi hai", no: "Nahi, badlo" },
+    requests: { title: "Aaj ki maang", none: "Abhi koi maang nahi" },
+    need: { labels: { people_count: "Log", needed_by: "Kab tak", veg_only: "Khana" },
+            people: "{n} log", vegOnly: "Sirf veg", anyFood: "Veg ya non-veg", number: "Maang",
+            status: { CONFIRMING: "Jaanch rahe hain", OPEN: "Khane ka intezaar", MATCHED: "Khana mil gaya",
+                      DELIVERED: "Pahunch gaya", EXPIRED: "Samay nikal gaya" } },
+    notice: {
+      blocked: "Browser ne mic rok diya hai. Address ke paas taale ke nishaan par tap karein, Microphone → Allow chuniye, phir page reload karein. Buttons se bhi jawab de sakte hain.",
+      noNetwork: "Internet nahi hai. Wi-Fi check karein.",
+      server: "Kuch gadbad hui: {what}. Dobara koshish karein.",
+      short: "Bahut chhota tha. Bolte samay button dabaaye rakhiye.",
+      hold: "Bolte samay button dabaaye rakhiye.",
+      empty: "Recording nahi hui. Dobara dabaakar boliye.",
+      silent: "Mic ne kuch nahi suna. Settings mein doosra mic chuniye, ya button dabaaiye.",
+    },
+    conn: { live: "Live", reconnecting: "Jod rahe hain…", offline: "Offline" },
+    sheet: "Sanstha chuniye", settings: "Settings", mock: "Mock mode: kya bolenge?",
+    mockSend: "Bina mic bheje", micLabel: "Microphone", replay: "Phir se suniye",
+    kot: KOT_WORDS["hi-IN"],
+  },
+
+  "ml-IN": {
+    today: { people: "ഇന്ന് ഭക്ഷണം കിട്ടിയവർ", meals: "ഇന്ന് കിട്ടിയ പ്ലേറ്റ്" },
+    incoming: { title: "വഴിയിലുള്ള ഭക്ഷണം", finding: "വോളണ്ടിയറെ തിരയുന്നു",
+                empty: "ഇതുവരെ ഭക്ഷണം വഴിയിലില്ല. നിങ്ങൾക്ക് വേണ്ടത് പറയൂ, അടുത്തുള്ള അടുക്കളകളെ അതുമായി ബന്ധിപ്പിക്കും.",
+                eta: "{v} · ഏകദേശം {m} മിനിറ്റ്", arriving: "{v} · ഉടൻ എത്തും", here: "ഇവിടെ" },
+    arrival: { q: "ഭക്ഷണം എത്തിയോ?", yes: "അതെ, എത്തി", no: "ഇല്ല, ഇതുവരെ ഇല്ല",
+               hold: "അമർത്തി അതെ / ഇല്ല പറയൂ" },
+    ask: { title: "ഭക്ഷണം ചോദിക്കൂ", hint: "എത്ര പേർക്ക്, എപ്പോഴേക്ക്, വെജ് മാത്രമാണോ എന്ന് ഒറ്റയടിക്ക് പറയൂ.",
+           more: "കൂടുതൽ ഭക്ഷണം ചോദിക്കൂ" },
+    mic: { ask: "അമർത്തിപ്പിടിച്ച് പറയൂ", reply: "അമർത്തി മറുപടി പറയൂ",
+           recording: "കേൾക്കുന്നു… വിട്ടാൽ അയയ്ക്കും", sending: "മനസ്സിലാക്കുന്നു…" },
+    confirm: { yes: "അതെ, ശരിയാണ്", no: "ഇല്ല, മാറ്റണം" },
+    requests: { title: "ഇന്നത്തെ ആവശ്യങ്ങൾ", none: "ഇതുവരെ ആവശ്യങ്ങളില്ല" },
+    need: { labels: { people_count: "ആളുകൾ", needed_by: "എപ്പോഴേക്ക്", veg_only: "ഭക്ഷണം" },
+            people: "{n} പേർ", vegOnly: "വെജ് മാത്രം", anyFood: "വെജ് / നോൺ വെജ്", number: "ആവശ്യം",
+            status: { CONFIRMING: "പരിശോധിക്കുന്നു", OPEN: "ഭക്ഷണം കാത്തിരിക്കുന്നു", MATCHED: "ഭക്ഷണം കിട്ടി",
+                      DELIVERED: "എത്തി", EXPIRED: "സമയം കഴിഞ്ഞു" } },
+    notice: {
+      blocked: "ബ്രൗസർ മൈക്ക് തടഞ്ഞു. അഡ്രസിനടുത്തുള്ള പൂട്ടിന്റെ ചിഹ്നത്തിൽ തൊടൂ, Microphone → Allow തിരഞ്ഞെടുക്കൂ, എന്നിട്ട് പേജ് റീലോഡ് ചെയ്യൂ. ബട്ടണുകൾ കൊണ്ടും മറുപടി നൽകാം.",
+      noNetwork: "ഇന്റർനെറ്റ് ഇല്ല. Wi-Fi നോക്കൂ.",
+      server: "എന്തോ പ്രശ്നം: {what}. വീണ്ടും ശ്രമിക്കൂ.",
+      short: "വളരെ ചെറുതായി. സംസാരിക്കുമ്പോൾ ബട്ടൺ അമർത്തിപ്പിടിക്കൂ.",
+      hold: "സംസാരിക്കുമ്പോൾ ബട്ടൺ അമർത്തിപ്പിടിക്കൂ.",
+      empty: "റെക്കോർഡ് ആയില്ല. വീണ്ടും അമർത്തി പറയൂ.",
+      silent: "മൈക്ക് ഒന്നും കേട്ടില്ല. Settings-ൽ മറ്റൊരു മൈക്ക് തിരഞ്ഞെടുക്കൂ, അല്ലെങ്കിൽ ബട്ടൺ അമർത്തൂ.",
+    },
+    conn: { live: "ലൈവ്", reconnecting: "കണക്റ്റ് ചെയ്യുന്നു…", offline: "ഓഫ്‌ലൈൻ" },
+    sheet: "സ്ഥാപനം തിരഞ്ഞെടുക്കൂ", settings: "സെറ്റിംഗ്സ്", mock: "Mock mode: എന്ത് പറയും?",
+    mockSend: "മൈക്ക് ഇല്ലാതെ അയയ്ക്കൂ", micLabel: "മൈക്ക്", replay: "വീണ്ടും കേൾക്കൂ",
+    kot: KOT_WORDS["ml-IN"],
+  },
+
+  "en-IN": {
+    today: { people: "people served today", meals: "meals received today" },
+    incoming: { title: "Food on the way", finding: "Finding a volunteer",
+                empty: "No food on the way yet. Record what you need and nearby kitchens will be matched to it.",
+                eta: "{v} · about {m} min", arriving: "{v} · arriving any minute", here: "Here" },
+    arrival: { q: "Has the food arrived?", yes: "Yes, it's here", no: "No, not yet",
+               hold: "Hold and say yes or no" },
+    ask: { title: "Ask for food", hint: "Say how many people, by when, and whether it must be veg.",
+           more: "Ask for more food" },
+    mic: { ask: "Hold to ask for food", reply: "Hold to answer", recording: "Listening… let go to send",
+           sending: "Understanding…" },
+    confirm: { yes: "Yes, that's right", no: "No, change it" },
+    requests: { title: "Your requests today", none: "No requests yet" },
+    need: {},  // the need slip's English defaults
+    notice: {
+      blocked: "The browser blocked the microphone. Tap the lock icon next to the address, choose Microphone → Allow, then reload the page. The buttons work too.",
+      noNetwork: "No internet. Check the Wi-Fi.",
+      server: "Something went wrong: {what}. Try again.",
+      short: "That was too short. Keep holding the button while you speak.",
+      hold: "Keep holding the button while you speak.",
+      empty: "Nothing was recorded. Hold the button and say it again.",
+      silent: "The microphone heard nothing. Pick another microphone in Settings, or tap a button.",
+    },
+    conn: { live: "Live", reconnecting: "Reconnecting…", offline: "Offline" },
+    sheet: "Choose shelter", settings: "Settings", mock: "Mock mode: what would you say?",
+    mockSend: "Send without mic", micLabel: "Microphone", replay: "Play again",
+    kot: KOT_WORDS["en-IN"],
+  },
+
+  "kn-IN": {
+    today: { people: "ಇಂದು ಊಟ ಪಡೆದವರು", meals: "ಇಂದು ಬಂದ ಪ್ಲೇಟ್" },
+    incoming: { title: "ದಾರಿಯಲ್ಲಿರುವ ಆಹಾರ", finding: "ಸ್ವಯಂಸೇವಕರನ್ನು ಹುಡುಕುತ್ತಿದ್ದೇವೆ",
+                empty: "ಇನ್ನೂ ಆಹಾರ ದಾರಿಯಲ್ಲಿಲ್ಲ. ನಿಮಗೆ ಏನು ಬೇಕು ಎಂದು ಹೇಳಿ, ಹತ್ತಿರದ ಅಡುಗೆಮನೆಗಳನ್ನು ಅದಕ್ಕೆ ಜೋಡಿಸಲಾಗುತ್ತದೆ.",
+                eta: "{v} · ಸುಮಾರು {m} ನಿಮಿಷ", arriving: "{v} · ಬೇಗನೆ ತಲುಪುತ್ತಾರೆ", here: "ಇಲ್ಲಿ" },
+    arrival: { q: "ಆಹಾರ ಬಂತೇ?", yes: "ಹೌದು, ಬಂತು", no: "ಇಲ್ಲ, ಇನ್ನೂ ಇಲ್ಲ", hold: "ಒತ್ತಿ ಹೌದು / ಇಲ್ಲ ಹೇಳಿ" },
+    ask: { title: "ಆಹಾರ ಕೇಳಿ", hint: "ಎಷ್ಟು ಜನರಿಗೆ, ಯಾವಾಗದೊಳಗೆ, ಸಸ್ಯಾಹಾರ ಮಾತ್ರವೇ ಎಂದು ಒಮ್ಮೆಲೇ ಹೇಳಿ.",
+           more: "ಇನ್ನಷ್ಟು ಆಹಾರ ಕೇಳಿ" },
+    mic: { ask: "ಒತ್ತಿ ಹಿಡಿದು ಹೇಳಿ", reply: "ಒತ್ತಿ ಉತ್ತರಿಸಿ",
+           recording: "ಕೇಳುತ್ತಿದ್ದೇವೆ… ಬಿಟ್ಟರೆ ಕಳುಹಿಸುತ್ತೇವೆ", sending: "ಅರ್ಥಮಾಡಿಕೊಳ್ಳುತ್ತಿದ್ದೇವೆ…" },
+    confirm: { yes: "ಹೌದು, ಸರಿ", no: "ಇಲ್ಲ, ಬದಲಿಸಿ" },
+    requests: { title: "ಇಂದಿನ ಬೇಡಿಕೆಗಳು", none: "ಇನ್ನೂ ಬೇಡಿಕೆಗಳಿಲ್ಲ" },
+    need: { labels: { people_count: "ಜನ", needed_by: "ಯಾವಾಗದೊಳಗೆ", veg_only: "ಆಹಾರ" },
+            people: "{n} ಜನ", vegOnly: "ಸಸ್ಯಾಹಾರ ಮಾತ್ರ", anyFood: "ಯಾವುದಾದರೂ", number: "ಬೇಡಿಕೆ",
+            status: { CONFIRMING: "ಪರಿಶೀಲಿಸುತ್ತಿದ್ದೇವೆ", OPEN: "ಆಹಾರಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದ್ದೇವೆ", MATCHED: "ಆಹಾರ ಸಿಕ್ಕಿತು",
+                      DELIVERED: "ತಲುಪಿತು", EXPIRED: "ಸಮಯ ಮೀರಿದೆ" } },
+    notice: {
+      blocked: "ಬ್ರೌಸರ್ ಮೈಕ್ ತಡೆದಿದೆ. ವಿಳಾಸದ ಪಕ್ಕದ ಬೀಗದ ಚಿಹ್ನೆಯನ್ನು ಒತ್ತಿ, Microphone → Allow ಆರಿಸಿ, ನಂತರ ಪುಟ ರೀಲೋಡ್ ಮಾಡಿ. ಬಟನ್‌ಗಳಿಂದಲೂ ಉತ್ತರಿಸಬಹುದು.",
+      noNetwork: "ಇಂಟರ್ನೆಟ್ ಇಲ್ಲ. Wi-Fi ನೋಡಿ.",
+      server: "ಏನೋ ತೊಂದರೆ: {what}. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+      short: "ತುಂಬಾ ಚಿಕ್ಕದು. ಮಾತನಾಡುವಾಗ ಬಟನ್ ಒತ್ತಿ ಹಿಡಿಯಿರಿ.",
+      hold: "ಮಾತನಾಡುವಾಗ ಬಟನ್ ಒತ್ತಿ ಹಿಡಿಯಿರಿ.",
+      empty: "ರೆಕಾರ್ಡ್ ಆಗಲಿಲ್ಲ. ಮತ್ತೆ ಒತ್ತಿ ಹೇಳಿ.",
+      silent: "ಮೈಕ್ ಏನೂ ಕೇಳಲಿಲ್ಲ. Settings ನಲ್ಲಿ ಬೇರೆ ಮೈಕ್ ಆರಿಸಿ, ಅಥವಾ ಬಟನ್ ಒತ್ತಿ.",
+    },
+    conn: { live: "ಲೈವ್", reconnecting: "ಸಂಪರ್ಕಿಸುತ್ತಿದೆ…", offline: "ಆಫ್‌ಲೈನ್" },
+    sheet: "ಸಂಸ್ಥೆ ಆರಿಸಿ", settings: "ಸೆಟ್ಟಿಂಗ್ಸ್", mock: "Mock mode: ಏನು ಹೇಳುತ್ತೀರಿ?",
+    mockSend: "ಮೈಕ್ ಇಲ್ಲದೆ ಕಳುಹಿಸಿ", micLabel: "ಮೈಕ್", replay: "ಮತ್ತೆ ಕೇಳಿ",
+    kot: KOT_WORDS["kn-IN"],
+  },
+};
+
+export function strings(code) {
+  return STRINGS[code] || STRINGS["hi-IN"];
+}
+
+export function fill(template, values = {}) {
+  return template.replace(/\{(\w+)\}/g, (_, k) => values[k] ?? "");
+}

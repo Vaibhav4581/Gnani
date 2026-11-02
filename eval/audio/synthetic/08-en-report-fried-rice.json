@@ -1,0 +1,13 @@
+{
+  "language": "en-IN",
+  "kind": "report",
+  "source": "synthetic-tts",
+  "spoken": "Thirty kilos of fried rice, made at half past one.",
+  "expected": {
+    "dish": "fried rice",
+    "quantity": 30,
+    "unit": "kg",
+    "cooked_time": "13:30",
+    "location": null
+  }
+}

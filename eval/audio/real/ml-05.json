@@ -1,0 +1,19 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "real",
+  "condition": "quiet",
+  "style": "Manglish (Malayalam spoken casually, English words mixed in)",
+  "note": "Template: read the 'spoken' sentence aloud and save the recording next to this file with the same name (e.g. ml-05.m4a, .wav or .webm). Until then run_eval lists it as waiting for a recording.",
+  "spoken": "irupathu petti chappathi und, vaikunneram anju manikku undaakki, Kakkanattil ninnu",
+  "expected": {
+    "dish": [
+      "chappathi",
+      "ചപ്പാത്തി"
+    ],
+    "quantity": 20,
+    "unit": "box",
+    "cooked_time": "17:00",
+    "location": "Kakkanad"
+  }
+}

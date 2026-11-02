@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FAFAF7">
+  <title>Bacha Hua Khana · Volunteer</title>
+  <link rel="preload" href="/assets/fonts/baloo2-latin-400-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/hind-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/design.css">
+  <link rel="stylesheet" href="volunteer.css">
+</head>
+<!-- An offer should feel like an incoming phone call. One screen at a time (data-screen):
+     off -> on -> offer -> accepted -> back to on. Words come from strings.js. -->
+<body class="reading-far is-loading" data-screen="off">
+  <header class="topbar" data-reveal>
+    <button class="person-name" id="who-btn" type="button" aria-haspopup="dialog">
+      <span id="who-label">Volunteer</span>
+      <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg>
+    </button>
+    <span class="conn" id="conn" data-state="offline" role="status">
+      <span class="conn-dot" aria-hidden="true"></span><span id="conn-word">Connecting…</span>
+    </span>
+  </header>
+
+  <main class="page-body" data-reveal>
+    <div class="callout" id="notice" role="alert" hidden>
+      <svg class="icon" aria-hidden="true"><use id="notice-icon" href="/assets/icons.svg#check"/></svg>
+      <p id="notice-text"></p>
+    </div>
+
+    <!-- off duty -->
+    <section class="screen screen-off" id="screen-off">
+      <h1 class="visually-hidden">Bacha Hua Khana: volunteer</h1>
+      <div class="me">
+        <svg class="me-icon" aria-hidden="true"><use href="/assets/icons.svg#bike"/></svg>
+        <div class="me-body">
+          <p class="me-area" id="me-area">&nbsp;</p>
+          <p class="text-muted" id="me-carries">&nbsp;</p>
+          <p class="text-muted lang-name" id="me-lang">&nbsp;</p>
+        </div>
+      </div>
+      <div class="callout callout--attention" id="me-unavailable" hidden>
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#clock"/></svg>
+        <p id="me-unavailable-text"></p>
+      </div>
+      <button class="btn btn-primary btn-huge btn-bilingual" id="duty" type="button"></button>
+      <p class="text-muted" id="duty-hint"></p>
+    </section>
+
+    <!-- on duty: calm -->
+    <section class="screen screen-on" id="screen-on" hidden>
+      <div class="calm">
+        <svg class="calm-icon" aria-hidden="true"><use href="/assets/icons.svg#bike"/></svg>
+        <h1 id="on-title"></h1>
+        <p id="on-body"></p>
+      </div>
+      <dl class="today">
+        <div><dt id="today-label"></dt><dd class="hero-number num" id="today-rescues">0</dd></div>
+        <div><dt id="meals-label"></dt><dd class="hero-number num" id="today-meals">0</dd></div>
+      </dl>
+      <button class="btn btn-secondary btn-bilingual" id="off-duty" type="button"></button>
+    </section>
+
+    <!-- incoming offer: full-screen haldi, like a call -->
+    <section class="screen screen-offer" id="screen-offer" hidden aria-live="assertive">
+      <div class="timeout" aria-hidden="true"><div id="timeout-bar"></div></div>
+      <div class="caller">
+        <span class="caller-ring"><svg class="ringing" id="ring-icon" aria-hidden="true"><use href="/assets/icons.svg#phone"/></svg></span>
+        <div>
+          <p class="caller-title"><span id="offer-title"></span> · <span class="num" id="offer-secs"></span></p>
+          <h1 class="caller-kitchen" id="offer-kitchen"></h1>
+        </div>
+      </div>
+      <div id="offer-slip"></div>
+      <ul class="facts">
+        <li><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#bike"/></svg><span id="offer-ride"></span></li>
+        <li id="offer-drop-row"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#people"/></svg>
+          <span><span class="fact-label" id="offer-drop-label"></span> <strong id="offer-drop"></strong></span></li>
+      </ul>
+      <div class="said">
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#speaker"/></svg>
+        <p id="offer-said"></p>
+        <button class="said-replay" id="replay" type="button" aria-label="Play again">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#play"/></svg>
+        </button>
+      </div>
+      <p class="listening" id="listening" hidden>
+        <span class="speaking-bars" aria-hidden="true"><i></i><i></i><i></i></span><span id="listening-word"></span>
+      </p>
+      <div class="call-buttons">
+        <button class="btn btn-danger btn-huge btn-bilingual" id="no" type="button"></button>
+        <button class="mic-btn call-mic" id="talk" type="button">
+          <svg class="icon" aria-hidden="true"><use id="talk-icon" href="/assets/icons.svg#mic"/></svg>
+          <span class="visually-hidden" id="talk-label"></span>
+        </button>
+        <button class="btn btn-primary btn-huge btn-bilingual" id="yes" type="button"></button>
+      </div>
+    </section>
+
+    <!-- accepted: leaf -->
+    <section class="screen screen-accepted" id="screen-accepted" hidden>
+      <h1 class="accepted-title"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#check"/></svg>
+        <span id="accepted-title"></span></h1>
+      <ol class="stops" id="stops"></ol>
+      <p class="accepted-note" id="accepted-note" hidden></p>
+      <button class="btn btn-inverse btn-huge btn-bilingual" id="picked" type="button"></button>
+      <button class="btn btn-inverse btn-huge btn-bilingual" id="delivered" type="button" hidden></button>
+    </section>
+
+    <details class="disclosure" id="settings">
+      <summary><span id="settings-title">Settings</span>
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg></summary>
+      <div class="disclosure-body">
+        <div class="field" id="mock-panel" hidden>
+          <label class="field-label" for="mock-text" id="mock-label">Mock mode</label>
+          <input class="input" id="mock-text" type="text" autocomplete="off">
+          <button class="btn btn-secondary" id="mock-send" type="button">Send without mic</button>
+        </div>
+        <div class="field" id="mic-row" hidden>
+          <label class="field-label" for="mic" id="mic-label">Microphone</label>
+          <select class="select" id="mic"></select>
+        </div>
+        <p class="text-small text-muted num" id="latency"></p>
+      </div>
+    </details>
+  </main>
+
+  <dialog class="sheet" id="who-sheet" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">Choose volunteer</h2>
+    <div class="sheet-list" id="who-list"></div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Bacha Hua Khana: a KOT slip (torn bottom edge) on banana-leaf green -->
+  <rect width="32" height="32" rx="7" fill="#1E5631"/>
+  <path d="M9 6h14v18l-2.33 2-2.34-2-2.33 2-2.33-2-2.34 2L9 24z" fill="#FFFFFF"/>
+  <rect x="12" y="10" width="8" height="2" rx="1" fill="#17261C"/>
+  <rect x="12" y="15" width="5" height="2" rx="1" fill="#F2A900"/>
+</svg>

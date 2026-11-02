@@ -1,0 +1,13 @@
+{
+  "language": "en-IN",
+  "kind": "report",
+  "source": "synthetic-tts",
+  "spoken": "We have fifty plates of veg biryani left over, cooked at two in the afternoon, from Fort Kochi.",
+  "expected": {
+    "dish": "veg biryani",
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Fort Kochi"
+  }
+}

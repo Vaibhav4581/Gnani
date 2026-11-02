@@ -1,0 +1,19 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "synthetic-tts+noise",
+  "spoken": "അമ്പത് പ്ലേറ്റ് ചിക്കൻ ബിരിയാണി ബാക്കിയുണ്ട്. ഉച്ചയ്ക്ക് രണ്ട് മണിക്ക് ഉണ്ടാക്കിയതാണ്. കാക്കനാട്ടിൽ നിന്നാണ്.",
+  "expected": {
+    "dish": "ചിക്കൻ ബിരിയാണി",
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Kakkanad"
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/01-ml-report-biryani.wav",
+    "snr_db": 10
+  }
+}

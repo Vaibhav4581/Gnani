@@ -1,0 +1,13 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "synthetic-tts",
+  "spoken": "പത്ത് കിലോ ചോറും സാമ്പാറും ഉണ്ട്, രാവിലെ പതിനൊന്ന് മണിക്ക് ഉണ്ടാക്കിയത്.",
+  "expected": {
+    "dish": "ചോറ് സാമ്പാറ്",
+    "quantity": 10,
+    "unit": "kg",
+    "cooked_time": "11:00",
+    "location": null
+  }
+}

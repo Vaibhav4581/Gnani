@@ -1,0 +1,19 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "real",
+  "condition": "quiet",
+  "style": "Malayalam",
+  "note": "Template: read the 'spoken' sentence aloud and save the recording next to this file with the same name (e.g. ml-03.m4a, .wav or .webm). Until then run_eval lists it as waiting for a recording.",
+  "spoken": "അഞ്ച് ലിറ്റർ പായസം ബാക്കിയുണ്ട്, വൈകുന്നേരം നാല് മണിക്ക് ഉണ്ടാക്കിയത്, കാക്കനാട്",
+  "expected": {
+    "dish": [
+      "പായസം",
+      "payasam"
+    ],
+    "quantity": 5,
+    "unit": "litre",
+    "cooked_time": "16:00",
+    "location": "Kakkanad"
+  }
+}

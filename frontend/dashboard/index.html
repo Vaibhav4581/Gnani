@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FAFAF7">
+  <title>Bacha Hua Khana · Dashboard</title>
+  <link rel="preload" href="/assets/fonts/baloo2-latin-400-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/hind-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/design.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<!-- The coordinator's live view, read as a route board: each report is a KOT slip that travels
+     from "Reported" to "Delivered". Click a slip for its full timeline. Kept live by /ws/dashboard. -->
+<body class="is-loading">
+  <header class="top">
+    <div class="brand">
+      <h1 class="brand-name">Bacha Hua Khana</h1>
+      <span class="brand-role">Coordinator</span>
+    </div>
+    <span class="conn" id="conn" data-state="reconnecting" role="status">
+      <span class="conn-dot" aria-hidden="true"></span><span id="conn-word">Connecting…</span>
+    </span>
+    <span id="phone-mode" class="phone-badge" hidden
+          title="Every clip goes through an 8 kHz, 300–3400 Hz phone-line filter before speech to text">
+      <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#phone"/></svg>Phone line · 8 kHz
+    </span>
+    <nav class="top-links" aria-label="Other screens">
+      <a href="/kitchen/">Kitchen</a><a href="/volunteer/">Volunteer</a><a href="/ngo/">Shelter</a>
+    </nav>
+    <button id="reset" class="quiet-btn" type="button">Reset demo</button>
+  </header>
+
+  <main id="content" data-reveal>
+  <section class="strip" aria-label="Impact today">
+    <div class="strip-item strip-item--hero">
+      <span id="i-meals" class="strip-big num">0</span>
+      <span class="strip-label">meals rescued today</span>
+    </div>
+    <div class="strip-item"><span id="i-rescues" class="strip-num num">0</span><span class="strip-label">rescues</span></div>
+    <div class="strip-item"><span id="i-people" class="strip-num num">0</span><span class="strip-label">people served</span></div>
+    <div class="strip-item"><span id="i-duty" class="strip-num num">0</span><span class="strip-label">volunteers on duty</span></div>
+    <p id="i-note" class="strip-note"></p>
+  </section>
+
+  <div class="main" id="main">
+    <div class="col">
+      <p class="visually-hidden" id="announce" aria-live="polite"></p>
+      <section class="board" aria-label="Route board: reports from kitchens to shelters">
+        <section class="lane" data-lane="reported" aria-labelledby="h-reported">
+          <h2 class="lane-h" id="h-reported">Reported <span class="lane-n num" id="n-reported">0</span></h2>
+          <ol class="lane-list" id="lane-reported"></ol>
+        </section>
+        <section class="lane" data-lane="finding" aria-labelledby="h-finding">
+          <h2 class="lane-h" id="h-finding">Finding a volunteer <span class="lane-n num" id="n-finding">0</span></h2>
+          <ol class="lane-list" id="lane-finding"></ol>
+        </section>
+        <section class="lane" data-lane="on_way" aria-labelledby="h-on_way">
+          <h2 class="lane-h" id="h-on_way">On the way <span class="lane-n num" id="n-on_way">0</span></h2>
+          <ol class="lane-list" id="lane-on_way"></ol>
+        </section>
+        <section class="lane" data-lane="delivered" aria-labelledby="h-delivered">
+          <h2 class="lane-h" id="h-delivered">Delivered <span class="lane-n num" id="n-delivered">0</span></h2>
+          <ol class="lane-list" id="lane-delivered"></ol>
+        </section>
+      </section>
+
+      <details class="disclosure closed" id="closed" hidden>
+        <summary>Closed today: cancelled or expired <span class="lane-n num" id="n-closed">0</span>
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg></summary>
+        <ol class="lane-list closed-list" id="lane-closed"></ol>
+      </details>
+
+      <div class="below">
+        <div class="below-left">
+        <section class="panel pipeline" aria-labelledby="pipe-h">
+          <h2 id="pipe-h" class="panel-h">Voice pipeline <span class="panel-sub">average, last 24 h</span></h2>
+          <dl id="pipeline" class="pipe"></dl>
+          <p id="pipe-note" class="panel-note"></p>
+        </section>
+        <section class="panel needs" aria-labelledby="needs-h">
+          <h2 id="needs-h" class="panel-h">Open needs <span class="lane-n num" id="n-needs">0</span></h2>
+          <ol id="needs" class="need-list"></ol>
+        </section>
+        </div>
+        <section class="panel map" aria-labelledby="map-h">
+          <h2 id="map-h" class="panel-h">Kochi <span class="panel-sub">schematic</span></h2>
+          <svg id="map" class="map-svg" viewBox="0 0 360 460" role="img" aria-labelledby="map-h map-cap"></svg>
+          <ul class="map-key" aria-label="Map key">
+            <li><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" class="m-kitchen"/></svg>Kitchen</li>
+            <li><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="4" class="m-vol"/></svg>Volunteer on duty</li>
+            <li><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="4" class="m-vol is-off"/></svg>Off duty</li>
+            <li><svg viewBox="0 0 14 14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" class="m-ngo"/></svg>Shelter</li>
+          </ul>
+          <ul id="map-routes" class="map-routes" aria-label="Routes on the map"></ul>
+          <p id="map-cap" class="panel-note">Placed by lat/lng, not a street map. Volunteers are drawn at their home area (no live GPS).</p>
+        </section>
+      </div>
+    </div>
+
+    <aside class="detail" id="detail" hidden aria-labelledby="d-title">
+      <header class="detail-head">
+        <div>
+          <p class="detail-number num" id="d-number"></p>
+          <h2 id="d-title" class="detail-title"></h2>
+        </div>
+        <button id="d-close" class="icon-btn" type="button" aria-label="Close">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#cross"/></svg>
+        </button>
+      </header>
+      <div class="detail-status" id="d-status"></div>
+      <section class="detail-sec" aria-labelledby="d-heard-h">
+        <h3 id="d-heard-h" class="sec-h">What the kitchen said</h3>
+        <blockquote id="d-heard" class="heard"></blockquote>
+        <dl id="d-fields" class="facts"></dl>
+      </section>
+      <section class="detail-sec" aria-labelledby="d-tried-h">
+        <h3 id="d-tried-h" class="sec-h">Volunteers tried</h3>
+        <ol id="d-tried" class="tried"></ol>
+      </section>
+      <section class="detail-sec" aria-labelledby="d-steps-h">
+        <h3 id="d-steps-h" class="sec-h">Timeline <span class="sec-ms">latency</span></h3>
+        <ol id="d-steps" class="steps"></ol>
+      </section>
+      <div class="detail-actions">
+        <button id="d-pickup" class="btn btn-secondary" type="button" hidden>Mark picked up</button>
+        <button id="d-share" class="btn btn-primary" type="button" hidden>Share impact card</button>
+      </div>
+    </aside>
+  </div>
+
+  </main>
+
+  <dialog id="share" class="sheet share" aria-labelledby="s-title">
+    <div class="share-head">
+      <h2 id="s-title">Share this rescue</h2>
+      <button id="s-close" class="icon-btn" type="button" aria-label="Close">
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#cross"/></svg>
+      </button>
+    </div>
+    <div class="seg share-size" role="radiogroup" aria-label="Card size">
+      <button class="seg-btn" type="button" role="radio" aria-checked="true" data-format="square">Square 1:1</button>
+      <button class="seg-btn" type="button" role="radio" aria-checked="false" data-format="portrait">Portrait 4:5</button>
+    </div>
+    <img id="s-img" class="share-img" alt="Impact card for this rescue" width="1080" height="1080">
+    <p id="s-error" class="callout callout--error" hidden>The card isn't ready yet. Try again in a moment.</p>
+    <div class="cluster">
+      <a id="s-download" class="btn btn-primary" download>Download PNG</a>
+      <button id="s-share" class="btn btn-secondary" type="button" hidden>Share…</button>
+    </div>
+    <p class="panel-note" id="s-note">1080 × 1080, ready for Instagram, LinkedIn or WhatsApp.</p>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

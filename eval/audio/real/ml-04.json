@@ -1,0 +1,19 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "real",
+  "condition": "quiet",
+  "style": "Manglish (Malayalam spoken casually, English words mixed in)",
+  "note": "Template: read the 'spoken' sentence aloud and save the recording next to this file with the same name (e.g. ml-04.m4a, .wav or .webm). Until then run_eval lists it as waiting for a recording.",
+  "spoken": "ambathu plate biryani baakki und, uchakku rendu manikku undaakkiyathu, Vyttila il",
+  "expected": {
+    "dish": [
+      "biryani",
+      "ബിരിയാണി"
+    ],
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Vyttila"
+  }
+}

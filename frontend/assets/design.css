@@ -1,0 +1,694 @@
+/* Bacha Hua Khana design system. Rules and reasons: DESIGN.md at the project root.
+   Plain CSS, no build step. Pages link this file and use the classes below. */
+
+/* ------------------------------------------------------------------ fonts */
+/* Self-hosted (fonts/, SIL OFL), one rule per script subset, so a page only
+   downloads the scripts it shows. */
+@font-face {
+  font-family: "Baloo 2";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/baloo2-devanagari-400-800.woff2") format("woff2");
+  unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+}
+@font-face {
+  font-family: "Baloo 2";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/baloo2-latin-400-800.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Baloo Chettan 2";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/baloochettan2-malayalam-400-800.woff2") format("woff2");
+  unicode-range: U+0307, U+0323, U+0951-0952, U+0964-0965, U+0B83, U+0D00-0D7F, U+1CDA, U+1CF2, U+200C-200D, U+20B9, U+25CC, U+A830-A832;
+}
+@font-face {
+  font-family: "Baloo Tamma 2";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/balootamma2-kannada-400-800.woff2") format("woff2");
+  unicode-range: U+0951-0952, U+0964-0965, U+0B83, U+0C80-0CF3, U+1CD0, U+1CD2-1CD3, U+1CDA, U+1CF2, U+1CF4, U+200C-200D, U+20B9, U+25CC, U+A830-A835;
+}
+@font-face {
+  font-family: "Hind";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/hind-devanagari-400.woff2") format("woff2");
+  unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+}
+@font-face {
+  font-family: "Hind";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/hind-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Hind";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/hind-devanagari-600.woff2") format("woff2");
+  unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+}
+@font-face {
+  font-family: "Hind";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/hind-latin-600.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Noto Sans Malayalam";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/notosansmalayalam-malayalam-400-700.woff2") format("woff2");
+  unicode-range: U+0307, U+0323, U+0951-0952, U+0964-0965, U+0B83, U+0D00-0D7F, U+1CDA, U+1CF2, U+200C-200D, U+20B9, U+25CC, U+A830-A832;
+}
+@font-face {
+  font-family: "Noto Sans Kannada";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/notosanskannada-kannada-400-700.woff2") format("woff2");
+  unicode-range: U+0951-0952, U+0964-0965, U+0B83, U+0C80-0CF3, U+1CD0, U+1CD2-1CD3, U+1CDA, U+1CF2, U+1CF4, U+200C-200D, U+20B9, U+25CC, U+A830-A835;
+}
+
+/* Language names (हिन्दी, മലയാളം, ಕನ್ನಡ) wherever languages are listed or named: tiny subsets of
+   the display fonts holding only those words (3-4 KB each), so a page doesn't download a whole
+   script's font (up to 112 KB) just to name it. Use class="lang-name". */
+@font-face {
+  font-family: "Language names";
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/baloo2-names-devanagari.woff2") format("woff2");
+  unicode-range: U+0926, U+0928, U+0939, U+093F, U+0940, U+094D;
+}
+@font-face {
+  font-family: "Language names";
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/baloochettan2-names-malayalam.woff2") format("woff2");
+  unicode-range: U+0D02, U+0D2E, U+0D2F, U+0D32, U+0D33, U+0D3E;
+}
+@font-face {
+  font-family: "Language names";
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/balootamma2-names-kannada.woff2") format("woff2");
+  unicode-range: U+0C95, U+0CA1, U+0CA8, U+0CCD;
+}
+
+/* ------------------------------------------------------------------ tokens */
+:root {
+  /* colour: banana leaf, haldi, mirchi, stainless steel */
+  --leaf: #1E5631;
+  --leaf-soft: #E3EFE4;
+  --haldi: #F2A900;         /* backgrounds only; text on it is --ink */
+  --haldi-soft: #FFF4D6;
+  --mirchi: #C62E1F;
+  --mirchi-soft: #FBE6E3;
+  --steel: #D5DADF;         /* dividers and decoration only: 1.4:1 on white */
+  --steel-dark: #5F6A74;    /* secondary text, and borders of controls (3:1+) */
+  --rice: #FAFAF7;
+  --paper: #FFFFFF;
+  --ink: #17261C;
+  --leaf-deep: #17462A;     /* hover on leaf buttons */
+  --mirchi-deep: #A82618;   /* hover on mirchi buttons */
+
+  /* type */
+  --font-display: "Baloo 2", "Baloo Chettan 2", "Baloo Tamma 2", system-ui, sans-serif;
+  --font-body: "Hind", "Noto Sans Malayalam", "Noto Sans Kannada", system-ui, sans-serif;
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.563rem;
+  --step-3: 1.953rem;
+  --step-4: 2.441rem;
+  --step-hero: 3.815rem;
+  --text-small: var(--step--1);  /* labels, hints, pills; one step up under .reading-far */
+
+  /* space: a 4px grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* shape */
+  --radius-slip: 4px;
+  --radius-control: 10px;
+  --radius-button: 14px;
+  --tap: 56px;              /* minimum touch target */
+  --tap-big: 88px;          /* kitchen and volunteer buttons */
+  --focus-ring: 3px solid var(--leaf);
+  --paper-shadow: drop-shadow(0 1px 1px rgba(23, 38, 28, .10)) drop-shadow(0 8px 14px rgba(23, 38, 28, .10));
+  --tooth: 20px;            /* KOT torn edge: tooth width; teeth are half as deep (10px) */
+
+  /* motion */
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+}
+
+/* ------------------------------------------------------------------ base */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--rice);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+h1 { font-size: var(--step-4); }
+h2 { font-size: var(--step-3); }
+h3 { font-size: var(--step-2); }
+h4 { font-size: var(--step-1); }
+
+p, li, dd, label, .measure { max-width: 70ch; }
+
+/* Kitchen and volunteer screens are read from a metre away, often in a hurry: put this on
+   their <body>. Body text goes up a step (20px) and small text follows it (16px). */
+.reading-far { font-size: var(--step-1); --text-small: var(--step-0); }
+p { margin: 0; }
+a { color: var(--leaf); text-underline-offset: 3px; }
+small, .text-small { font-size: var(--text-small); }
+.text-muted { color: var(--steel-dark); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Quantities ("50 plates") are always big Baloo 2 semibold. */
+.qty {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--step-4);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.hero-number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--step-hero);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+
+.icon {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.2em;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* layout helpers */
+.stack { display: flex; flex-direction: column; gap: var(--stack-gap, var(--space-4)); }
+.cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cluster-gap, var(--space-3)); }
+.page { max-width: 34rem; margin: 0 auto; padding: var(--space-4) var(--space-4) var(--space-7); }
+
+/* ------------------------------------------------------------------ buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-5);
+  border: 2px solid transparent;
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled, .btn[aria-disabled="true"] {
+  background: var(--steel);
+  border-color: var(--steel);
+  color: var(--steel-dark);
+  cursor: not-allowed;
+}
+
+.btn-primary { background: var(--leaf); color: var(--paper); }
+.btn-primary:hover:not(:disabled) { background: var(--leaf-deep); }
+.btn-secondary { background: var(--paper); border-color: var(--steel-dark); color: var(--ink); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--ink); }
+.btn-danger { background: var(--mirchi); color: var(--paper); }
+.btn-danger:hover:not(:disabled) { background: var(--mirchi-deep); }
+.btn-huge { min-height: var(--tap-big); width: 100%; font-size: var(--step-2); }
+/* The main action on a leaf screen: paper, with leaf text (8.6:1). */
+.btn-inverse { background: var(--paper); color: var(--leaf); }
+.btn-inverse:hover:not(:disabled) { background: var(--leaf-soft); }
+/* A "no" that isn't destructive ("Nahi, badlo"): outlined in mirchi. */
+.btn-outline-danger { background: var(--paper); border-color: var(--mirchi); color: var(--mirchi); }
+.btn-outline-danger:hover:not(:disabled) { background: var(--mirchi-soft); }
+
+/* Primary language big, English small underneath: "Haan" / "Yes". */
+.btn-bilingual { flex-direction: column; gap: 0; padding-block: var(--space-2); }
+.btn-bilingual .btn-en {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 600;
+  line-height: 1.3;
+  opacity: .92;
+}
+
+/* ------------------------------------------------------------------ status pills */
+/* Always colour + icon + word. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 2px 12px 2px 10px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: var(--text-small);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.pill .icon { width: 1.1em; height: 1.1em; }
+.pill--reported { background: var(--haldi); color: var(--ink); }
+.pill--checking { background: var(--haldi-soft); border-color: var(--haldi); color: var(--ink); }
+.pill--finding  { background: var(--steel); color: var(--ink); }
+.pill--on-way   { background: var(--leaf-soft); border-color: var(--leaf); color: var(--leaf); }
+.pill--delivered { background: var(--leaf); color: var(--paper); }
+.pill--stopped  { background: var(--mirchi-soft); border-color: var(--mirchi); color: var(--mirchi); }
+
+/* ------------------------------------------------------------------ KOT slip */
+/* A kitchen order ticket: white paper, torn bottom edge, dashed rules. The wrapper
+   carries the paper shadow (a filter, so it follows the torn edge); the only shadow
+   anywhere in the system. */
+.kot {
+  width: 100%;
+  max-width: 24rem;
+  filter: var(--paper-shadow);
+}
+.kot-paper {
+  position: relative;
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) + var(--tooth) / 2);
+  background: var(--paper);
+  border-radius: var(--radius-slip) var(--radius-slip) 0 0;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg)
+    50% / var(--tooth) 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg)
+    50% / var(--tooth) 100%;
+}
+.kot-head {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px dashed var(--steel);
+}
+.kot-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.kot-kitchen { font-family: var(--font-display); font-size: var(--step-1); font-weight: 700; line-height: 1.15; }
+.kot-number {
+  color: var(--steel-dark);
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+.kot-lines { margin: 0; padding: 0; list-style: none; }
+.kot-line {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+.kot-line + .kot-line { border-top: 1px dashed var(--steel); }
+.kot-label { color: var(--steel-dark); font-size: var(--text-small); }
+.kot-value { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+/* A value not heard yet: a blank line waiting to be written on, sized like its value. */
+.kot-slot { display: inline-block; width: 5.5em; height: 1em; vertical-align: baseline;
+            border-bottom: 2px dashed var(--steel-dark); }
+.kot-slot--qty { display: block; width: 4.5em; height: 1.1em; font-size: var(--step-4); }
+.kot-slot--dish { width: 8em; height: 1.15em; font-size: var(--step-2); }
+.kot-line--food { grid-template-columns: 1fr; gap: 0; padding-top: var(--space-3); }
+.kot-food { display: flex; align-items: center; gap: var(--space-2); }
+.kot-food .qty { display: block; }
+.kot-dish { font-family: var(--font-display); font-size: var(--step-2); font-weight: 600; line-height: 1.15; }
+.kot-mark { width: 1.4rem; height: 1.4rem; flex: none; }
+.kot-deadline { display: grid; justify-items: start; }
+/* The time and the countdown are two rows (the countdown wraps on phones anyway). A blank
+   deadline holds an invisible countdown in the same words (.kot-ghost), so the ticket doesn't
+   grow when the line writes in. */
+.kot-ghost { visibility: hidden; }
+/* Ink while there is time; mirchi from 30 minutes left, so red always means hurry. */
+.kot-countdown { color: var(--ink); font-weight: 600; }  /* wraps: long in Malayalam and Kannada */
+.kot-countdown.is-urgent { color: var(--mirchi); font-weight: 700; }
+
+/* A line being written in: ink reveals left to right over a haldi highlight. */
+.kot-value.is-writing { animation: kot-write .55s var(--ease-out) both; }
+@keyframes kot-write {
+  from { clip-path: inset(0 100% 0 0); background: var(--haldi-soft); }
+  70% { background: var(--haldi-soft); }
+  to { clip-path: inset(0 0 0 0); background: transparent; }
+}
+/* The first ticket on a page prints in; nothing else animates on load. */
+.kot.is-printing { animation: kot-print .6s var(--ease-out) both; }
+@keyframes kot-print {
+  from { clip-path: inset(0 0 100% 0); transform: translateY(-12px); }
+  to { clip-path: inset(0 0 -40px 0); transform: none; }
+}
+
+/* ------------------------------------------------------------------ mic button */
+.mic-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: min(70vw, 15rem);
+  aspect-ratio: 1;
+  padding: var(--space-5);
+  border: 0;
+  border-radius: 50%;
+  background: var(--leaf);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.mic-btn .icon { width: 34%; height: auto; aspect-ratio: 1; stroke-width: 1.75; }
+.mic-btn:focus-visible { outline-offset: 6px; }
+.mic-btn.is-recording { background: var(--haldi); color: var(--ink); }
+.mic-btn.is-recording::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 6px solid var(--haldi);
+  animation: mic-pulse 1.2s var(--ease-out) infinite;
+  pointer-events: none;
+}
+@keyframes mic-pulse {
+  from { transform: scale(1); opacity: .7; }
+  to { transform: scale(1.22); opacity: 0; }
+}
+/* Busy: the label ("Understanding…") still carries information, so it stays ink (11:1). */
+.mic-btn:disabled { background: var(--steel); color: var(--ink); cursor: wait; }
+
+/* ------------------------------------------------------------------ forms */
+.field { display: flex; flex-direction: column; gap: var(--space-1); }
+.field-label { font-weight: 600; }
+.field-hint { color: var(--steel-dark); font-size: var(--text-small); }
+.input, .select {
+  min-height: var(--tap);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--steel-dark);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+.input::placeholder { color: var(--steel-dark); opacity: 1; }
+.input:focus-visible, .select:focus-visible { outline-offset: 0; border-color: var(--leaf); }
+.field.has-error .input, .field.has-error .select { border-color: var(--mirchi); }
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--mirchi);
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+/* Messages: what happened and what to do. Colour + icon + words. */
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid currentColor;
+  border-radius: var(--radius-control);
+}
+.callout .icon { margin-top: 2px; }
+.callout p { color: var(--ink); }
+.callout--error { background: var(--mirchi-soft); color: var(--mirchi); }
+.callout--success { background: var(--leaf-soft); color: var(--leaf); }
+.callout--attention { background: var(--haldi-soft); color: var(--ink); border-left-color: var(--haldi); }
+
+/* ------------------------------------------------------------------ mic level ring */
+/* .mic-btn--ring: a haldi ring around the mic. While recording it follows the live mic level:
+   set --level (0..1) on the button from an AnalyserNode, about 30 times a second. */
+.mic-btn--ring::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 8px solid var(--haldi);
+  transform: scale(calc(1 + var(--level, 0) * .22));
+  transition: transform 80ms linear;
+  pointer-events: none;
+}
+.mic-btn--ring.is-recording::before { display: none; }  /* the level ring replaces the pulse */
+.mic-btn--ring:disabled::after { border-color: var(--steel); }
+
+/* ------------------------------------------------------------------ segmented control */
+/* One choice from a few, always in view (a kitchen's language). role="radiogroup" on .seg,
+   role="radio" + aria-checked on each .seg-btn. */
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px;
+  background: var(--paper);
+  border: 2px solid var(--steel-dark);
+  border-radius: var(--radius-button);
+}
+.seg-btn {
+  min-height: var(--tap);
+  min-width: 0;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  overflow-wrap: break-word;
+}
+.seg-btn[aria-checked="true"] { background: var(--leaf); color: var(--paper); }
+
+/* ------------------------------------------------------------------ connection */
+/* A dot plus a word, never the dot alone. data-state: live | reconnecting | offline. */
+.conn { display: inline-flex; flex: none; align-items: center; gap: 6px; color: var(--steel-dark);
+        font-size: var(--text-small); white-space: nowrap; }
+.conn-dot { width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--leaf); }
+.conn[data-state="reconnecting"] .conn-dot { background: var(--haldi); }
+.conn[data-state="offline"] { color: var(--mirchi); font-weight: 600; }
+.conn[data-state="offline"] .conn-dot { background: var(--mirchi); }
+
+/* A need slip (what a shelter asked for): the same ticket on leaf-soft paper. */
+.kot--need .kot-paper { background: var(--leaf-soft); }
+
+/* ------------------------------------------------------------------ KOT extras */
+/* The follow-up question beside a line that is still missing. */
+.kot-note {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--haldi-soft);
+  color: var(--ink);
+  font-weight: 600;
+}
+.kot-note .icon { margin-top: .15em; }
+/* Sending: the blank slots breathe until the first line writes in. */
+.kot.is-sending .kot-slot { animation: slot-wait 1.1s ease-in-out infinite; }
+@keyframes slot-wait { 50% { opacity: .3; } }
+
+/* The app's voice is playing: three moving bars in place of the status pill's icon. */
+.speaking { display: inline-flex; align-items: center; gap: 4px; color: var(--leaf); }
+.pill .speaking-bars { width: 1.1em; justify-content: center; }
+.speaking-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 1em; }
+.speaking-bars i { width: 3px; height: 100%; border-radius: 2px; background: currentColor;
+                   transform: scaleY(.4); transform-origin: bottom;  /* a transform: no layout per frame */
+                   animation: speak-bar .9s ease-in-out infinite; }
+.speaking-bars i:nth-child(2) { animation-delay: .15s; }
+.speaking-bars i:nth-child(3) { animation-delay: .3s; }
+@keyframes speak-bar { 50% { transform: scaleY(1); } }
+
+/* The route: kitchen -> volunteer -> NGO along the foot of the ticket. A leg fills when the
+   food moves on (the "ticket sliding along the route" motion). */
+.route {
+  display: grid;
+  align-items: start;
+  gap: 0 6px;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  border-top: 2px dashed var(--steel);
+  list-style: none;
+  font-size: var(--text-small);
+}
+.route-stop { display: grid; justify-items: center; gap: 4px; min-width: 0; text-align: center; }
+.route-stop .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 5px;
+  box-sizing: content-box;
+  border: 2px solid var(--steel-dark);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--steel-dark);
+}
+.route-stop.is-done .icon { background: var(--leaf); border-color: var(--leaf); color: var(--paper); }
+.route-stop.is-now .icon { border-color: var(--leaf); color: var(--leaf); }
+.route-name { max-width: 7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-leg { position: relative; height: 4px; margin-top: calc(.625rem + 5px); border-radius: 2px;
+             background: var(--steel); overflow: hidden; }
+.route-leg::after { content: ""; position: absolute; inset: 0; background: var(--leaf);
+                    transform: scaleX(var(--fill, 0)); transform-origin: left;
+                    transition: transform .7s var(--ease-out); }
+
+/* ------------------------------------------------------------------ stops (vertical route) */
+/* Where to go, top to bottom: pick up, then drop off. .is-done when a stop is behind you. */
+.stops { display: grid; margin: 0; padding: 0; list-style: none; }
+.stop { position: relative; display: grid; grid-template-columns: 2.75rem minmax(0, 1fr);
+        gap: 0 var(--space-3); padding-bottom: var(--space-5); }
+.stop:last-child { padding-bottom: 0; }
+.stop::before { content: ""; position: absolute; left: calc(1.375rem - 2px); top: 2.75rem; bottom: 0;
+                width: 4px; border-radius: 2px; background: currentColor; opacity: .35; }
+.stop:last-child::before { display: none; }
+.stop-dot { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 3px solid currentColor;
+            border-radius: 50%; }
+.stop-dot .icon { width: 1.4rem; height: 1.4rem; }
+.stop.is-done .stop-dot { background: currentColor; }
+.stop.is-done .stop-dot .icon { color: var(--leaf); }
+.stop-body { display: grid; gap: 2px; min-width: 0; padding-top: 4px; }
+.stop-label { font-size: var(--text-small); font-weight: 600; opacity: .9; }
+.stop-name { font-family: var(--font-display); font-size: var(--step-2); font-weight: 700; line-height: 1.15; }
+
+/* ------------------------------------------------------------------ ringing */
+/* An incoming offer: the phone icon shakes like a ringing phone. Stills under reduced motion. */
+.ringing { animation: ring-shake 1.4s ease-in-out infinite; transform-origin: 50% 60%; }
+@keyframes ring-shake {
+  0%, 45%, 100% { transform: rotate(0); }
+  5%, 15%, 25%, 35% { transform: rotate(-14deg); }
+  10%, 20%, 30%, 40% { transform: rotate(14deg); }
+}
+
+/* ------------------------------------------------------------------ sheet */
+/* A short list to pick from (which kitchen, which volunteer): a <dialog class="sheet">
+   holding big .btn rows; aria-current="true" marks the current one. */
+.sheet {
+  width: min(30rem, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--rice);
+  color: var(--ink);
+}
+.sheet::backdrop { background: rgba(23, 38, 28, .5); }
+.sheet h2 { font-size: var(--step-2); margin-bottom: var(--space-4); }
+.sheet-list { display: grid; gap: var(--space-3); }
+.sheet-list .btn { justify-content: space-between; text-align: left; }
+.sheet-list .btn small { font-family: var(--font-body); font-weight: 400; color: var(--steel-dark); }
+.sheet-list .btn[aria-current="true"] { border-color: var(--leaf); background: var(--leaf-soft); }
+
+/* ------------------------------------------------------------------ disclosure */
+/* Something there when wanted, out of the way otherwise (last report, settings). */
+.disclosure { border-top: 1px solid var(--steel); }
+.disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  font-family: var(--font-display);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.disclosure > summary::-webkit-details-marker { display: none; }
+.disclosure > summary .icon { margin-left: auto; transition: transform .2s; }
+.disclosure[open] > summary .icon { transform: rotate(180deg); }
+.disclosure-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3);
+                   padding: 0 0 var(--space-4); }
+
+/* ------------------------------------------------------------------ first render */
+/* A page whose first screen is drawn by its script (in the user's language, or from live data)
+   keeps those regions invisible until then, so nothing jumps as text arrives (no layout shift).
+   Put class="is-loading" on <body> and data-reveal on the regions; the script removes the class.
+   If the script never does, the regions show after 2 s anyway. */
+.is-loading [data-reveal] { visibility: hidden; animation: reveal 0s 2s forwards; }
+@keyframes reveal { to { visibility: visible; } }
+
+/* ------------------------------------------------------------------ motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  .mic-btn.is-recording::before { display: none; }
+  .btn:active:not(:disabled) { transform: none; }
+}
+
+/* ------------------------------------------------------------------ language names */
+/* Last in the file, so it wins over component fonts (.seg-btn, .sheet-list small...). */
+.lang-name { font-family: "Language names", var(--font-display); }

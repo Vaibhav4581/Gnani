@@ -1,0 +1,10 @@
+{
+  "language": "en-IN",
+  "kind": "reply",
+  "source": "synthetic-tts",
+  "voice": "Girish",
+  "spoken": "Yes, that's correct.",
+  "expected": {
+    "answer": "yes"
+  }
+}
