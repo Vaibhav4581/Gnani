@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FAFAF7">
+  <title>Bacha Hua Khana · NGO</title>
+  <link rel="preload" href="/assets/fonts/baloo2-latin-400-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/hind-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/design.css">
+  <link rel="stylesheet" href="ngo.css">
+</head>
+<!-- The shelter coordinator's screen: calmer than the kitchen, a bit more information. Food on
+     the way (soonest first, with the "Khana aa gaya?" question when it arrives), and asking for
+     food by voice as a need slip. Words come from strings.js. -->
+<body class="is-loading">
+  <header class="topbar" data-reveal>
+    <div class="topbar-row">
+      <button class="ngo-name" id="ngo-btn" type="button" aria-haspopup="dialog">
+        <span id="ngo-label">NGO</span>
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg>
+      </button>
+      <span class="conn" id="conn" data-state="reconnecting" role="status">
+        <span class="conn-dot" aria-hidden="true"></span><span id="conn-word">Connecting…</span>
+      </span>
+    </div>
+    <dl class="today">
+      <div><dt id="today-people-label">people served today</dt><dd class="num" id="today-people">0</dd></div>
+      <div><dt id="today-meals-label">meals received today</dt><dd class="num" id="today-meals">0</dd></div>
+    </dl>
+  </header>
+
+  <main class="layout" data-reveal>
+    <h1 class="visually-hidden">Bacha Hua Khana: shelter</h1>
+    <div class="callout" id="notice" role="alert" hidden>
+      <svg class="icon" aria-hidden="true"><use id="notice-icon" href="/assets/icons.svg#check"/></svg>
+      <p id="notice-text"></p>
+    </div>
+
+    <section class="incoming" aria-labelledby="incoming-h">
+      <h2 id="incoming-h"></h2>
+      <p class="empty" id="incoming-empty"></p>
+      <ol class="food-list" id="food-list" aria-live="polite"></ol>
+    </section>
+
+    <!-- The arriving food's question; moved under the ticket it belongs to. -->
+    <section class="arrival" id="arrival" hidden aria-live="assertive">
+      <div class="arrival-q">
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#speaker"/></svg>
+        <h3 id="arrival-q"></h3>
+        <button class="replay" id="arrival-replay" type="button" aria-label="Play again">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#play"/></svg>
+        </button>
+      </div>
+      <div class="answers">
+        <button class="btn btn-primary btn-huge btn-bilingual" id="arrival-yes" type="button"></button>
+        <button class="btn btn-outline-danger btn-huge btn-bilingual" id="arrival-no" type="button"></button>
+      </div>
+      <div class="arrival-voice">
+        <button class="mic-btn arrival-mic" id="arrival-talk" type="button">
+          <svg class="icon" aria-hidden="true"><use id="arrival-talk-icon" href="/assets/icons.svg#mic"/></svg>
+        </button>
+        <span id="arrival-hold"></span>
+      </div>
+    </section>
+
+    <section class="ask" aria-labelledby="ask-h">
+      <h2 id="ask-h"></h2>
+      <div class="mic-zone">
+        <button class="mic-btn mic-btn--ring ngo-mic" id="talk" type="button">
+          <svg class="icon" aria-hidden="true"><use id="talk-icon" href="/assets/icons.svg#mic"/></svg>
+          <span id="talk-label"></span>
+        </button>
+        <p class="text-muted mic-hint" id="ask-hint"></p>
+      </div>
+      <div class="say" id="say" hidden aria-live="polite">
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#speaker"/></svg>
+        <p id="say-text"></p>
+        <button class="replay" id="replay" type="button" aria-label="Play again">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#play"/></svg>
+        </button>
+      </div>
+      <div id="need-holder"></div>
+      <div class="answers" id="confirm-actions" hidden>
+        <button class="btn btn-primary btn-huge btn-bilingual" id="confirm-yes" type="button"></button>
+        <button class="btn btn-outline-danger btn-huge btn-bilingual" id="confirm-no" type="button"></button>
+      </div>
+      <button class="btn btn-secondary btn-bilingual" id="more" type="button" hidden></button>
+
+      <section class="requests" aria-labelledby="requests-h">
+        <h3 id="requests-h"></h3>
+        <ol class="request-list" id="request-list"></ol>
+      </section>
+
+      <details class="disclosure" id="settings">
+        <summary><span id="settings-title">Settings</span>
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg></summary>
+        <div class="disclosure-body">
+          <div class="field" id="mock-panel" hidden>
+            <label class="field-label" for="mock-text" id="mock-label">Mock mode</label>
+            <input class="input" id="mock-text" type="text" autocomplete="off">
+            <button class="btn btn-secondary" id="mock-send" type="button">Send without mic</button>
+          </div>
+          <div class="field" id="mic-row" hidden>
+            <label class="field-label" for="mic" id="mic-label">Microphone</label>
+            <select class="select" id="mic"></select>
+          </div>
+          <p class="text-small text-muted num" id="latency"></p>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <dialog class="sheet" id="ngo-sheet" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">Choose shelter</h2>
+    <div class="sheet-list" id="ngo-list"></div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

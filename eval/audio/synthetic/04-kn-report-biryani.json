@@ -1,0 +1,13 @@
+{
+  "language": "kn-IN",
+  "kind": "report",
+  "source": "synthetic-tts",
+  "spoken": "ಐವತ್ತು ಪ್ಲೇಟ್ ಬಿರಿಯಾನಿ ಉಳಿದಿದೆ. ಮಧ್ಯಾಹ್ನ ಎರಡು ಗಂಟೆಗೆ ಮಾಡಿದ್ದು. ಕಲೂರಿನಿಂದ.",
+  "expected": {
+    "dish": "ಬಿರಿಯಾನಿ",
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Kaloor"
+  }
+}

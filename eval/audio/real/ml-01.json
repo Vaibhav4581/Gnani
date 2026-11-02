@@ -1,0 +1,19 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "real",
+  "condition": "quiet",
+  "style": "Malayalam",
+  "note": "Template: read the 'spoken' sentence aloud and save the recording next to this file with the same name (e.g. ml-01.m4a, .wav or .webm). Until then run_eval lists it as waiting for a recording.",
+  "spoken": "അമ്പത് പ്ലേറ്റ് ചിക്കൻ ബിരിയാണി ബാക്കിയുണ്ട്, ഉച്ചയ്ക്ക് രണ്ട് മണിക്ക് ഉണ്ടാക്കിയത്, ഇടപ്പള്ളിയിൽ നിന്ന്",
+  "expected": {
+    "dish": [
+      "ചിക്കൻ ബിരിയാണി",
+      "chicken biryani"
+    ],
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Edappally"
+  }
+}

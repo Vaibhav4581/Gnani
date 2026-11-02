@@ -1,0 +1,162 @@
+/* Kitchen screen layout. Every component comes from /assets/design.css (see DESIGN.md);
+   this file only places them. Phone first; tablets in landscape get two columns. */
+
+body { min-height: 100dvh; }
+
+/* ------------------------------------------------------------------ top bar */
+/* On a phone the bar scrolls away with the page: at two rows tall it would take a fifth of
+   the screen. On a tablet it is one short row and stays. */
+.topbar {
+  display: grid;
+  grid-template-areas: "name conn" "seg seg";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  background: var(--rice);
+  border-bottom: 1px solid var(--steel);
+}
+.topbar-row { display: contents; }
+.kitchen-name {
+  grid-area: name;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.kitchen-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conn { grid-area: conn; }
+.topbar .seg { grid-area: seg; min-height: calc(var(--tap) + 12px); }  /* filled by app.js */
+
+/* ------------------------------------------------------------------ stage */
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);  /* never wider than the phone */
+  gap: var(--space-5);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+.mic-col, .slip-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4);
+                      min-width: 0; align-content: start; }
+#notice { width: 100%; }
+.notice-body { display: grid; gap: var(--space-3); }
+.notice-body .btn { justify-self: start; }
+
+.mic-zone { display: grid; justify-items: center; gap: var(--space-3); }
+.kitchen-mic { width: min(60vw, 320px); margin: 18px; font-size: var(--step-1); }
+.mic-side { display: grid; justify-items: center; gap: var(--space-1); min-width: 0; text-align: center; }
+.mic-caption { display: none; font-family: var(--font-display); font-size: var(--step-2);
+               font-weight: 600; line-height: 1.15; }
+.mic-timer { font-family: var(--font-display); font-size: var(--step-3); font-weight: 700; line-height: 1; }
+.mic-hint { color: var(--steel-dark); }
+
+/* Once a ticket is on screen, the mic steps aside for it (phone): a smaller circle with its
+   label beside it, so the ticket and its two answers fit on one screen. */
+@media (max-width: 899px) {
+  .stage.has-slip { gap: var(--space-4); padding-top: var(--space-3); }
+  .stage.has-slip .mic-zone { grid-template-columns: auto minmax(0, 1fr); justify-items: start;
+                              align-items: center; width: 100%; gap: var(--space-4); }
+  .stage.has-slip .kitchen-mic { width: 7rem; margin: 14px; padding: var(--space-3); }
+  .stage.has-slip .kitchen-mic .icon { width: 46%; }
+  .stage.has-slip #talk-label { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                                clip: rect(0 0 0 0); white-space: nowrap; }
+  .stage.has-slip .mic-side { justify-items: start; text-align: left; }
+  .stage.has-slip .mic-caption { display: block; }
+  .stage.has-slip .mic-hint { font-size: var(--text-small); }
+}
+
+/* ------------------------------------------------------------------ what the app said */
+.say {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border-left: 4px solid var(--leaf);
+  border-radius: var(--radius-control);
+  background: var(--leaf-soft);
+  font-weight: 600;
+}
+.say > .icon { margin-top: .2em; color: var(--leaf); }
+.say { scroll-margin-top: var(--space-4); }
+.say p { margin: 0; }
+.say-replay {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin: calc(var(--space-2) * -1) 0;
+  border: 2px solid var(--leaf);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--leaf);
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ the ticket */
+.slip-col .kot { max-width: none; }
+.kot[data-status="EXPIRED"] .kot-paper,
+.kot[data-status="CANCELLED"] .kot-paper { border-top: 6px solid var(--mirchi); }
+.kot[data-status="EXPIRED"] .qty,
+.kot[data-status="EXPIRED"] .kot-dish { text-decoration: line-through; text-decoration-thickness: 3px;
+                                         text-decoration-color: var(--mirchi); }
+
+/* ------------------------------------------------------------------ answers and steps */
+.answers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); }
+.answers .btn-huge { font-size: var(--step-1); padding-inline: var(--space-3); }
+
+.question {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px solid var(--haldi);
+  border-radius: var(--radius-control);
+  background: var(--haldi-soft);
+}
+.question-step { color: var(--steel-dark); font-size: var(--text-small); font-weight: 600; }
+.question-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center;
+                 gap: var(--space-3); }
+.question-head h2 { font-size: var(--step-2); }
+.question-icon { width: 2.75rem; height: 2.75rem; fill: none; stroke: currentColor; stroke-width: 2;
+                 stroke-linecap: round; stroke-linejoin: round; color: var(--ink); }
+#cancel { border-color: var(--mirchi); background: var(--mirchi-soft); }
+#cancel .question-icon { color: var(--mirchi); }
+
+.after { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); }
+.after .btn { padding-inline: var(--space-3); }
+.after #new-report,
+.after #ask-status[hidden] + #repeat-btn { grid-column: 1 / -1; }
+
+.last-food { font-weight: 600; }
+.disclosure > summary .summary-food { color: var(--steel-dark); font-family: var(--font-body);
+                                      font-weight: 400; overflow: hidden; text-overflow: ellipsis;
+                                      white-space: nowrap; min-width: 0; }
+
+/* ------------------------------------------------------------------ tablet, landscape */
+@media (min-width: 900px) {
+  .topbar { position: sticky; top: 0; z-index: 2;
+            grid-template-areas: "name seg conn"; grid-template-columns: minmax(0, 1fr) minmax(0, 28rem) auto; }
+  .kitchen-name { font-size: var(--step-2); }
+  .conn { justify-self: end; }
+  .stage {
+    max-width: 72rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+    align-items: start;
+    gap: var(--space-7);
+    padding-top: var(--space-6);
+  }
+  .mic-col { position: sticky; top: calc(var(--tap) + var(--space-7)); }
+  .say { scroll-margin-top: calc(var(--tap) + var(--space-6)); }  /* clear of the sticky bar */
+}

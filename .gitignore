@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+backend/tts_cache/
+backend/uploads/
+backend/cards/
+eval/transcripts*.json
+.DS_Store
+.pytest_cache/

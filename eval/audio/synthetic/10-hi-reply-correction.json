@@ -1,0 +1,13 @@
+{
+  "language": "hi-IN",
+  "kind": "reply",
+  "source": "synthetic-tts",
+  "spoken": "नहीं, साठ प्लेट है।",
+  "expected": {
+    "answer": "correction",
+    "fields": {
+      "quantity": 60,
+      "unit": "plate"
+    }
+  }
+}

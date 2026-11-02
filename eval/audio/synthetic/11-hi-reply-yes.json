@@ -1,0 +1,10 @@
+{
+  "language": "hi-IN",
+  "kind": "reply",
+  "source": "synthetic-tts",
+  "voice": "Vikrant",
+  "spoken": "हाँ, सही है।",
+  "expected": {
+    "answer": "yes"
+  }
+}

@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+httpx
+python-dotenv
+sqlmodel>=0.0.48
+pydub
+python-multipart
+pytest
+# Impact cards: PNG drawing, plus HarfBuzz shaping so Indic names render correctly
+pillow
+uharfbuzz
+fonttools

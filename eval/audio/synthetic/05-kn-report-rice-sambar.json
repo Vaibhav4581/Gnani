@@ -1,0 +1,13 @@
+{
+  "language": "kn-IN",
+  "kind": "report",
+  "source": "synthetic-tts",
+  "spoken": "ಇಪ್ಪತ್ತು ಕೆಜಿ ಅನ್ನ ಸಾಂಬಾರ್ ಇದೆ, ಬೆಳಿಗ್ಗೆ ಹನ್ನೊಂದು ಗಂಟೆಗೆ ಮಾಡಿದ್ದು.",
+  "expected": {
+    "dish": "ಅನ್ನ ಸಾಂಬಾರ್",
+    "quantity": 20,
+    "unit": "kg",
+    "cooked_time": "11:00",
+    "location": null
+  }
+}

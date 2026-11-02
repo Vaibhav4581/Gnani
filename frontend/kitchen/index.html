@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FAFAF7">
+  <title>Bacha Hua Khana · Kitchen</title>
+  <link rel="preload" href="/assets/fonts/baloo2-latin-400-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/hind-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/design.css">
+  <link rel="stylesheet" href="kitchen.css">
+</head>
+<!-- Read from a metre away in a hot, loud kitchen: one thing to do at a time. Words come from
+     strings.js in the kitchen's language; the English here is only what shows before it loads. -->
+<body class="reading-far is-loading">
+  <header class="topbar" data-reveal>
+    <div class="topbar-row">
+      <button class="kitchen-name" id="kitchen-btn" type="button" aria-haspopup="dialog">
+        <span id="kitchen-label">Kitchen</span>
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg>
+      </button>
+      <span class="conn" id="conn" data-state="live" role="status">
+        <span class="conn-dot" aria-hidden="true"></span><span id="conn-word">Live</span>
+      </span>
+    </div>
+    <div class="seg" id="langs" role="radiogroup" aria-label="Language"></div>
+  </header>
+
+  <main class="stage" id="stage" data-reveal>
+    <h1 class="visually-hidden">Bacha Hua Khana: kitchen</h1>
+    <section class="mic-col" aria-label="Microphone">
+      <div class="callout" id="notice" role="alert" hidden>
+        <svg class="icon" aria-hidden="true"><use id="notice-icon" href="/assets/icons.svg#cross"/></svg>
+        <div class="notice-body">
+          <p id="notice-text"></p>
+          <button class="btn btn-primary" id="notice-action" type="button" hidden></button>
+        </div>
+      </div>
+
+      <div class="mic-zone">
+        <button class="mic-btn mic-btn--ring kitchen-mic" id="talk" type="button">
+          <svg class="icon" aria-hidden="true"><use id="talk-icon" href="/assets/icons.svg#mic"/></svg>
+          <span id="talk-label">Hold to report food</span>
+        </button>
+        <div class="mic-side">
+          <p class="mic-caption" id="mic-caption" aria-hidden="true"></p>
+          <p class="mic-timer num" id="timer" hidden>0:00</p>
+          <p class="mic-hint" id="mic-hint"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slip-col" aria-label="Food report">
+      <div class="say" id="say" hidden aria-live="polite">
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#speaker"/></svg>
+        <p id="say-text" lang="hi"></p>
+        <button class="say-replay" id="replay" type="button" aria-label="Play again">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#play"/></svg>
+        </button>
+      </div>
+
+      <div id="slip-holder"></div>
+
+      <!-- Confirming the read-back: voice works too, these are the backup. -->
+      <div class="answers" id="confirm-actions" hidden>
+        <button class="btn btn-primary btn-huge btn-bilingual" id="confirm-yes" type="button"></button>
+        <button class="btn btn-outline-danger btn-huge btn-bilingual" id="confirm-no" type="button"></button>
+      </div>
+
+      <!-- Safety check: one question at a time. -->
+      <section class="question" id="safety" hidden aria-live="polite">
+        <p class="question-step" id="safety-step"></p>
+        <div class="question-head">
+          <svg class="question-icon" aria-hidden="true"><use id="safety-icon" href="/assets/icons.svg#veg"/></svg>
+          <h2 id="safety-q"></h2>
+        </div>
+        <div class="answers">
+          <button class="btn btn-primary btn-huge btn-bilingual" id="safety-yes" type="button"></button>
+          <button class="btn btn-outline-danger btn-huge btn-bilingual" id="safety-no" type="button"></button>
+        </div>
+      </section>
+
+      <!-- Cancel is always asked back first. -->
+      <section class="question" id="cancel" hidden aria-live="polite">
+        <div class="question-head">
+          <svg class="question-icon" aria-hidden="true"><use href="/assets/icons.svg#cross"/></svg>
+          <h2 id="cancel-q"></h2>
+        </div>
+        <div class="answers">
+          <button class="btn btn-danger btn-huge btn-bilingual" id="cancel-yes" type="button"></button>
+          <button class="btn btn-secondary btn-huge btn-bilingual" id="cancel-no" type="button"></button>
+        </div>
+      </section>
+
+      <div class="callout callout--error" id="expired-note" hidden>
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#clock"/></svg>
+        <p id="expired-text"></p>
+      </div>
+
+      <div class="after" id="after-actions" hidden>
+        <button class="btn btn-secondary" id="ask-status" type="button"></button>
+        <button class="btn btn-secondary" id="repeat-btn" type="button"></button>
+        <button class="btn btn-secondary" id="new-report" type="button"></button>
+      </div>
+
+      <details class="disclosure" id="last" hidden>
+        <summary><span id="last-title">Last report</span>
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg></summary>
+        <div class="disclosure-body">
+          <p class="last-food" id="last-food"></p>
+          <p class="text-small text-muted" id="last-hint"></p>
+          <button class="btn btn-secondary" id="last-repeat" type="button"></button>
+        </div>
+      </details>
+
+      <details class="disclosure" id="settings">
+        <summary><span id="settings-title">Settings</span>
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg></summary>
+        <div class="disclosure-body">
+          <div class="field" id="mock-panel" hidden>
+            <label class="field-label" for="mock-text" id="mock-label">Mock mode</label>
+            <input class="input" id="mock-text" type="text" autocomplete="off">
+            <button class="btn btn-secondary" id="mock-send" type="button">Send without mic</button>
+          </div>
+          <div class="field" id="mic-row" hidden>
+            <label class="field-label" for="mic" id="mic-label">Microphone</label>
+            <select class="select" id="mic"></select>
+          </div>
+          <p class="text-small text-muted num" id="latency"></p>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <dialog class="sheet" id="kitchen-sheet" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">Choose kitchen</h2>
+    <div class="sheet-list" id="kitchen-list"></div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+/* Volunteer screen layout. Components come from /assets/design.css (see DESIGN.md); this file
+   places them. The page colour says which screen you are on: off duty (rice), on duty
+   (leaf-soft, calm), an incoming offer (haldi, like a call) and an accepted pickup (leaf). */
+
+body { min-height: 100dvh; }
+body[data-screen="on"] { background: var(--leaf-soft); }
+body[data-screen="offer"] { background: var(--haldi); }
+body[data-screen="accepted"] { background: var(--leaf); color: var(--paper); }
+
+/* ------------------------------------------------------------------ top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-4);
+}
+body[data-screen="offer"] .topbar { display: none; }  /* full screen, like a call */
+body[data-screen="accepted"] .conn { color: var(--paper); }
+body[data-screen="accepted"] .conn-dot { background: var(--paper); }
+.person-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.person-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.page-body {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4) var(--space-7);
+}
+.screen { display: grid; gap: var(--space-5); min-width: 0; }
+body[data-screen="accepted"] #settings { display: none; }
+
+/* ------------------------------------------------------------------ off duty */
+.me { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4);
+      padding: var(--space-5) 0 var(--space-2); }
+.me-icon { width: 4.5rem; height: 4.5rem; fill: none; stroke: var(--leaf); stroke-width: 1.6;
+           stroke-linecap: round; stroke-linejoin: round; }
+.me-area { font-family: var(--font-display); font-size: var(--step-3); font-weight: 700; line-height: 1.1; }
+
+/* ------------------------------------------------------------------ on duty */
+.calm { display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-6); text-align: center; }
+.calm-icon { width: 5.5rem; height: 5.5rem; fill: none; stroke: var(--leaf); stroke-width: 1.5;
+             stroke-linecap: round; stroke-linejoin: round; }
+.calm h1 { font-size: var(--step-4); color: var(--leaf); }
+.calm p { font-size: var(--step-1); }
+.today { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin: 0; text-align: center; }
+.today div { display: grid; grid-template-rows: auto 1fr; align-content: start; }
+.today dd { order: -1; }  /* the number on top, level across columns however the labels wrap */
+.today dt { color: var(--ink); font-weight: 600; }
+.today dd { margin: 0; color: var(--leaf); }
+#off-duty { justify-self: center; }
+body[data-screen="on"] .callout--success { background: var(--paper); }  /* leaf-soft on leaf-soft vanishes */
+
+/* ------------------------------------------------------------------ incoming offer */
+.timeout { position: fixed; inset: 0 0 auto 0; z-index: 3; height: 8px; background: var(--haldi-soft); }
+#timeout-bar { height: 100%; background: var(--ink); transform-origin: left; }
+.screen-offer { padding-top: var(--space-3); }
+.caller { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4); }
+.caller-ring { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 50%;
+               background: var(--paper); }
+.caller-ring svg { width: 2.25rem; height: 2.25rem; fill: none; stroke: var(--ink); stroke-width: 2;
+                   stroke-linecap: round; stroke-linejoin: round; }
+.caller-title { font-weight: 600; }
+.caller-kitchen { font-size: var(--step-3); }
+.screen-offer .kot { max-width: none; }
+.facts { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; font-weight: 600; }
+.facts li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: var(--space-3); }
+.facts .icon { margin-top: .2em; }
+.fact-label { font-weight: 400; }
+.said { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: var(--space-3);
+        padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); border-left: 4px solid var(--ink);
+        border-radius: var(--radius-control); background: var(--haldi-soft); }
+.said > .icon { margin-top: .2em; }
+/* What the ringing voice said, in at most three lines: the ticket above already has the facts,
+   and the play button repeats it in full. */
+.said p { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+          overflow: hidden; }
+.said-replay { display: grid; place-items: center; width: var(--tap); height: var(--tap); margin: calc(var(--space-2) * -1) 0;
+               border: 2px solid var(--ink); border-radius: 50%; background: var(--paper); color: var(--ink); cursor: pointer; }
+.listening { display: inline-flex; align-items: center; justify-self: center; gap: var(--space-2);
+             padding: 6px 16px; border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 600; }
+
+/* The answers sit at the bottom like a call screen: no on the left, yes on the right, and a
+   smaller hold-to-talk mic between them. */
+.call-buttons {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 calc(var(--space-4) * -1);
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--haldi);
+}
+.call-buttons .btn-huge { font-size: var(--step-1); padding-inline: var(--space-2); }
+.call-mic { width: 4.75rem; padding: 0; }
+.call-mic .icon { width: 48%; }
+.call-mic.is-recording { background: var(--paper); color: var(--ink); }  /* haldi on haldi would vanish */
+.call-mic.is-recording::before { border-color: var(--paper); }
+
+/* ------------------------------------------------------------------ accepted */
+.accepted-title { display: flex; align-items: center; gap: var(--space-3); font-size: var(--step-3); }
+.accepted-title .icon { width: 2.25rem; height: 2.25rem; stroke-width: 3; }
+.screen-accepted .stops { color: var(--paper); }
+.stop-detail { opacity: .95; }
+.maps-link {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  margin-top: var(--space-2);
+  padding: 0 var(--space-4);
+  border: 2px solid var(--paper);
+  border-radius: var(--radius-button);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-decoration: none;
+}
+.accepted-note { font-size: var(--step-1); font-weight: 600; }
+body[data-screen="accepted"] :focus-visible { outline-color: var(--paper); }

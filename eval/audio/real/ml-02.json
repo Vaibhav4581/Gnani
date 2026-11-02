@@ -1,0 +1,20 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "real",
+  "condition": "quiet",
+  "style": "Malayalam",
+  "note": "Template: read the 'spoken' sentence aloud and save the recording next to this file with the same name (e.g. ml-02.m4a, .wav or .webm). Until then run_eval lists it as waiting for a recording.",
+  "spoken": "പത്ത് കിലോ ചോറും സാമ്പാറും ഉണ്ട്, രാവിലെ പതിനൊന്ന് മണിക്ക് ഉണ്ടാക്കി",
+  "expected": {
+    "dish": [
+      "ചോറ് സാമ്പാറ്",
+      "ചോറ് സാമ്പാർ",
+      "choru sambar"
+    ],
+    "quantity": 10,
+    "unit": "kg",
+    "cooked_time": "11:00",
+    "location": null
+  }
+}

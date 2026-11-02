@@ -1,0 +1,19 @@
+{
+  "language": "hi-IN",
+  "kind": "report",
+  "source": "synthetic-tts+noise",
+  "spoken": "पचास प्लेट वेज बिरयानी बची है, दोपहर दो बजे बनी थी, काक्कनाड से।",
+  "expected": {
+    "dish": "वेज बिरयानी",
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Kakkanad"
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/09-hi-report-biryani.wav",
+    "snr_db": 10
+  }
+}

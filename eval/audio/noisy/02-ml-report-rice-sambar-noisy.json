@@ -1,0 +1,19 @@
+{
+  "language": "ml-IN",
+  "kind": "report",
+  "source": "synthetic-tts+noise",
+  "spoken": "പത്ത് കിലോ ചോറും സാമ്പാറും ഉണ്ട്, രാവിലെ പതിനൊന്ന് മണിക്ക് ഉണ്ടാക്കിയത്.",
+  "expected": {
+    "dish": "ചോറ് സാമ്പാറ്",
+    "quantity": 10,
+    "unit": "kg",
+    "cooked_time": "11:00",
+    "location": null
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/02-ml-report-rice-sambar.wav",
+    "snr_db": 10
+  }
+}

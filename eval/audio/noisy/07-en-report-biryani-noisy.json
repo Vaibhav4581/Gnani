@@ -1,0 +1,19 @@
+{
+  "language": "en-IN",
+  "kind": "report",
+  "source": "synthetic-tts+noise",
+  "spoken": "We have fifty plates of veg biryani left over, cooked at two in the afternoon, from Fort Kochi.",
+  "expected": {
+    "dish": "veg biryani",
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Fort Kochi"
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/07-en-report-biryani.wav",
+    "snr_db": 10
+  }
+}

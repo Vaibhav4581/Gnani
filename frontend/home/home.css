@@ -1,0 +1,158 @@
+/* Home page: the introduction for judges and anyone opening the link. Tokens and components
+   from /assets/design.css (DESIGN.md). Phone first, two columns from 900px. */
+
+.wrap { width: min(72rem, 100% - 2 * var(--space-4)); margin-inline: auto; }
+.section { padding-block: var(--space-7); }
+
+/* ------------------------------------------------------------------ top bar */
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--space-2) var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--steel);
+  background: var(--paper);
+}
+.bar-brand { color: var(--ink); font-family: var(--font-display); font-size: var(--step-1);
+             font-weight: 700; text-decoration: none; }
+.bar-links { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-small); }
+
+/* ------------------------------------------------------------------ hero */
+/* Phone: headline, then the slip (the hero), then the words. Wide: words left, slip right. */
+.hero { display: grid; gap: var(--space-5); align-items: center; padding-block: var(--space-5) var(--space-7);
+        grid-template-areas: "title" "demo" "copy"; }
+.hero-title { grid-area: title; }
+.hero-demo { grid-area: demo; }
+.hero-copy { grid-area: copy; }
+.hero h1 { font-size: clamp(var(--step-3), 5.2vw, var(--step-hero)); line-height: 1.05; max-width: 16ch; }
+.lede { font-size: var(--step-1); max-width: 34rem; }
+.count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-3);
+         min-height: var(--step-hero);  /* the live number arrives after first paint */
+         margin-top: var(--space-5); max-width: none; }
+.count-n { font-family: var(--font-display); font-size: var(--step-hero); font-weight: 700; line-height: 1;
+           color: var(--leaf); }
+.count-n:empty { display: none; }
+.count-label { color: var(--steel-dark); }
+.hero-actions { margin-top: var(--space-5); }
+.hero-actions .btn { min-height: var(--tap); }
+
+.hero-demo { display: grid; gap: var(--space-3); justify-items: start; margin: 0; }
+.heard {
+  display: flex; align-items: flex-start; gap: var(--space-2);
+  min-height: 3.2em; max-width: 24rem;
+  padding: var(--space-2) var(--space-3);
+  border-left: 4px solid var(--haldi);
+  background: var(--haldi-soft);
+  font-size: var(--step-1); font-style: italic;
+}
+.heard .icon { margin-top: .2em; color: var(--ink); }
+.heard-word { transition: opacity .25s var(--ease-out); }
+.heard-word.is-waiting { opacity: 0; }
+.hero-slip { width: 100%; max-width: 24rem; }
+.hero-cap { color: var(--steel-dark); font-size: var(--text-small); }
+
+/* ------------------------------------------------------------------ bands */
+.band { padding-block: var(--space-7); background: var(--paper); border-block: 1px solid var(--steel); }
+.band h2, .section h2 { margin-bottom: var(--space-5); }
+
+/* how it works: three numbered steps, each with a small phone */
+.steps { display: grid; gap: var(--space-6); margin: 0; padding: 0; list-style: none; }
+.step { display: grid; gap: var(--space-3); align-content: start; }
+.step h3 { display: flex; align-items: center; gap: var(--space-2); font-size: var(--step-1); }
+.step-n {
+  display: inline-grid; place-items: center; width: 2rem; height: 2rem; flex: none;
+  border-radius: 50%; background: var(--leaf); color: var(--paper); font-size: var(--step-0);
+}
+/* A tiny version of each screen: the real components at 60%, inside a phone outline. */
+.phone {
+  --mini: .6;
+  position: relative;
+  width: 15rem; height: 21rem;
+  overflow: hidden;
+  border: 6px solid var(--ink); border-radius: 26px;
+  background: var(--rice);
+}
+.phone-inner {
+  position: absolute; top: 0; left: 0;
+  width: calc(100% / var(--mini)); padding: var(--space-4);
+  transform: scale(var(--mini)); transform-origin: top left;
+  display: grid; gap: var(--space-3); justify-items: center;
+}
+.phone-inner > * { width: 100%; }
+.phone-inner .kot { max-width: none; }
+.phone-inner .mic-btn { width: 9rem; }
+.phone-title { font-family: var(--font-display); font-size: var(--step-2); font-weight: 700; text-align: center; }
+.phone-q { display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+           font-family: var(--font-display); font-size: var(--step-2); font-weight: 700; }
+.phone-q .icon { color: var(--leaf); }
+.phone-ring { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; justify-self: center;
+              border-radius: 50%; background: var(--leaf); color: var(--paper); }
+.phone-ring .icon { width: 2rem; height: 2rem; }
+
+/* open the app */
+.apps { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.app {
+  display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: var(--space-1) var(--space-3);
+  height: 100%; padding: var(--space-4);
+  border: 1px solid var(--steel); border-radius: var(--radius-control);
+  background: var(--paper); color: var(--ink); text-decoration: none;
+}
+.app:hover { border-color: var(--leaf); background: var(--leaf-soft); }
+.app-icon { grid-row: span 2; width: 2rem; height: 2rem; color: var(--leaf); }
+.app-name { font-family: var(--font-display); font-size: var(--step-2); font-weight: 700; line-height: 1.1; }
+.app-who { color: var(--steel-dark); }
+
+/* built on Gnani AI */
+.engines { display: grid; gap: var(--space-4); }
+.engine { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-4);
+          border: 1px solid var(--steel); border-radius: var(--radius-control); background: var(--rice); }
+.engine h3 { font-size: var(--step-1); }
+.engine-kind { display: block; color: var(--steel-dark); font-family: var(--font-body);
+               font-size: var(--text-small); font-weight: 600; }
+.langs { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.langs li { display: flex; align-items: baseline; gap: var(--space-2); color: var(--steel-dark); }
+.lang-native { min-width: 5.5rem; color: var(--ink);
+               font-size: var(--step-1); font-weight: 600; }
+
+.eval { display: grid; gap: var(--space-3); margin-top: var(--space-6); }
+.eval h3 { font-size: var(--step-1); }
+.eval-head { font-size: var(--step-1); font-weight: 600; }
+.table-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--steel); border-radius: var(--radius-control); }
+.table-scroll:focus-visible { outline-offset: 2px; }
+.eval-table { width: 100%; min-width: 32rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.eval-table caption { padding: var(--space-2) var(--space-3); color: var(--steel-dark);
+                      font-size: var(--text-small); text-align: left; }
+.eval-table th, .eval-table td { padding: var(--space-2) var(--space-3); text-align: right; white-space: nowrap; }
+.eval-table th:first-child, .eval-table td:first-child { text-align: left; }
+.eval-table thead th { border-bottom: 2px solid var(--ink); font-size: var(--text-small); }
+.eval-table tbody tr + tr { border-top: 1px dashed var(--steel); }
+.eval-table tr.is-total { border-top: 2px solid var(--ink); font-weight: 600; }
+.note { color: var(--steel-dark); font-size: var(--text-small); }
+
+.honest { max-width: 48rem; }
+
+/* ------------------------------------------------------------------ footer */
+.foot { padding-block: var(--space-5); border-top: 1px solid var(--steel); background: var(--paper);
+        font-size: var(--text-small); }
+.foot-row { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); align-items: baseline; }
+.foot-name { font-family: var(--font-display); font-size: var(--step-0); font-weight: 700; }
+.foot-tags { color: var(--steel-dark); }
+
+/* ------------------------------------------------------------------ wider screens */
+@media (min-width: 700px) {
+  .apps, .engines { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 900px) {
+  .bar { padding-inline: var(--space-6); }
+  .hero { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); min-height: calc(100dvh - 4rem);
+          grid-template-areas: "title demo" "copy demo"; grid-template-rows: auto 1fr;
+          align-content: center; gap: var(--space-4) var(--space-6); padding-block: var(--space-7); }
+  .hero-title { align-self: end; }
+  .hero-copy { align-self: start; }
+  .hero-demo { justify-items: center; }
+  .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .apps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .engines { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 599.98px) {
+  .phone { justify-self: center; }
+}

@@ -1,0 +1,12 @@
+{
+  "language": "kn-IN",
+  "kind": "reply",
+  "source": "synthetic-tts",
+  "spoken": "ಇಲ್ಲ, ಮೂರು ಗಂಟೆಗೆ ಮಾಡಿದ್ದು.",
+  "expected": {
+    "answer": "correction",
+    "fields": {
+      "cooked_time": "15:00"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "language": "ml-IN",
+  "kind": "reply",
+  "source": "synthetic-tts",
+  "spoken": "അല്ല, അറുപത് പ്ലേറ്റ് ആണ്.",
+  "expected": {
+    "answer": "correction",
+    "fields": {
+      "quantity": 60,
+      "unit": "plate"
+    }
+  }
+}

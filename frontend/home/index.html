@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FAFAF7">
+  <title>Bacha Hua Khana · leftover food, reported by voice</title>
+  <meta name="description" content="A kitchen says what food is left in Hindi, Malayalam, Kannada or English. The app reads it back, calls a volunteer and tells the shelter when it's coming. Built on Gnani AI speech.">
+  <link rel="preload" href="/assets/fonts/baloo2-latin-400-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/hind-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/design.css">
+  <link rel="stylesheet" href="/home/home.css">
+</head>
+<!-- The home page: one screen for judges and anyone opening the link. The hero is a real KOT
+     slip writing itself in; the three small screens are the app's own components. -->
+<body class="is-loading">
+  <header class="bar">
+    <a class="bar-brand" href="/">Bacha Hua Khana</a>
+    <nav class="bar-links" aria-label="On this page">
+      <a href="#how">How it works</a><a href="#open">Open the app</a><a href="#gnani">Built on Gnani AI</a>
+    </nav>
+  </header>
+
+  <main data-reveal>
+    <section class="hero wrap" aria-labelledby="hero-h">
+      <h1 id="hero-h" class="hero-title">Leftover food, reported by voice, on its way to a shelter tonight.</h1>
+      <figure class="hero-demo" aria-label="A kitchen reports food by voice">
+        <p class="heard" id="heard" lang="hi-Latn">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#mic"/></svg>
+          <span id="heard-text"></span>
+        </p>
+        <div id="hero-slip" class="hero-slip"></div>
+        <figcaption class="hero-cap" id="hero-cap">Spoken in Hindi; the slip fills in as it's understood.</figcaption>
+      </figure>
+      <div class="hero-copy">
+        <p class="lede">A kitchen says what's left in Hindi, Malayalam, Kannada or English. The app
+          reads it back, calls a volunteer, and tells the shelter when it's coming.</p>
+        <p class="count" id="count" aria-live="polite">
+          <span class="count-n num" id="count-n"></span><span class="count-label" id="count-label">Counting the meals rescued…</span>
+        </p>
+        <div class="cluster hero-actions">
+          <a class="btn btn-primary" href="/kitchen/">Report food as a kitchen</a>
+          <a class="btn btn-secondary" href="/dashboard/">See it live</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <h2 id="how-h">How it works</h2>
+        <ol class="steps">
+          <li class="step">
+            <div class="phone" id="mini-kitchen" aria-hidden="true"></div>
+            <h3><span class="step-n">1</span> The kitchen speaks</h3>
+            <p>Hold the button and say it: "50 plate biryani, 2 baje bana". The app reads it back,
+              asks if it's veg and covered, and waits for a yes. It never acts on a guess.</p>
+          </li>
+          <li class="step">
+            <div class="phone" id="mini-volunteer" aria-hidden="true"></div>
+            <h3><span class="step-n">2</span> A volunteer gets a call</h3>
+            <p>The nearest volunteer on duty who can carry it hears the offer in their own language
+              and says yes or no. A no goes to the next one straight away.</p>
+          </li>
+          <li class="step">
+            <div class="phone" id="mini-shelter" aria-hidden="true"></div>
+            <h3><span class="step-n">3</span> The shelter receives</h3>
+            <p>A shelter asks for food by voice too. It sees who is coming and when, and says
+              "yes, it's here" when the food arrives.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="wrap section" id="open" aria-labelledby="open-h">
+      <h2 id="open-h">Open the app</h2>
+      <ul class="apps">
+        <li><a class="app" href="/kitchen/">
+          <svg class="icon app-icon" aria-hidden="true"><use href="/assets/icons.svg#flame"/></svg>
+          <span class="app-name">Kitchen</span>
+          <span class="app-who">For a restaurant, mess or caterer with food left over: say what it is and how much.</span>
+        </a></li>
+        <li><a class="app" href="/volunteer/">
+          <svg class="icon app-icon" aria-hidden="true"><use href="/assets/icons.svg#bike"/></svg>
+          <span class="app-name">Volunteer</span>
+          <span class="app-who">For someone with a scooter and an hour: hear an offer, say yes or no, follow the route.</span>
+        </a></li>
+        <li><a class="app" href="/ngo/">
+          <svg class="icon app-icon" aria-hidden="true"><use href="/assets/icons.svg#people"/></svg>
+          <span class="app-name">Shelter</span>
+          <span class="app-who">For a shelter or NGO: ask for food for tonight and confirm when it arrives.</span>
+        </a></li>
+        <li><a class="app" href="/dashboard/">
+          <svg class="icon app-icon" aria-hidden="true"><use href="/assets/icons.svg#clock"/></svg>
+          <span class="app-name">Dashboard</span>
+          <span class="app-who">For the coordinator: every rescue moving live, with each voice step's timing.</span>
+        </a></li>
+      </ul>
+    </section>
+
+    <section class="band" id="gnani" aria-labelledby="gnani-h">
+      <div class="wrap">
+        <h2 id="gnani-h">Built on Gnani AI</h2>
+        <div class="engines">
+          <article class="engine">
+            <h3>Prisma v2.5 <span class="engine-kind">speech to text</span></h3>
+            <p>Turns what a kitchen, volunteer or shelter says into text, in their own language,
+              including 8 kHz phone-line audio.</p>
+          </article>
+          <article class="engine">
+            <h3>Timbre v2.5 <span class="engine-kind">text to speech</span></h3>
+            <p>Speaks every read-back, safety question and volunteer offer, in the listener's
+              language. Each phrase is cached, so a phrase is paid for once.</p>
+          </article>
+          <article class="engine">
+            <h3>Languages</h3>
+            <ul class="langs">
+              <li><span class="lang-native lang-name" lang="hi">हिन्दी</span> Hindi</li>
+              <li><span class="lang-native lang-name" lang="ml">മലയാളം</span> Malayalam</li>
+              <li><span class="lang-native lang-name" lang="kn">ಕನ್ನಡ</span> Kannada</li>
+              <li><span class="lang-native lang-name" lang="en">English</span> Indian English</li>
+            </ul>
+          </article>
+        </div>
+        <div class="eval" id="eval" hidden>
+          <h3>How well it understands</h3>
+          <p class="eval-head" id="eval-head"></p>
+          <div class="table-scroll" tabindex="0" role="region" aria-labelledby="eval-cap">
+            <table class="eval-table">
+              <caption id="eval-cap">Checks that matched what was spoken, by recording condition</caption>
+              <thead><tr id="eval-cols"></tr></thead>
+              <tbody id="eval-rows"></tbody>
+            </table>
+          </div>
+          <p class="note" id="eval-run"></p>
+          <p class="note" id="eval-caveat"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section" aria-label="About this prototype">
+      <div class="callout callout--attention honest">
+        <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#covered"/></svg>
+        <p><strong>This is a prototype.</strong> Every kitchen, volunteer, shelter and phone number in
+          it is made up, set around Kochi. The app asks the kitchen two safety questions (veg? covered
+          and clean?), but in real use partner organisations would check the food before anyone eats it.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-row">
+      <span class="foot-name">Bacha Hua Khana</span>
+      <a href="#" aria-disabled="true" title="Link to be added">GitHub (link coming soon)</a>
+      <span class="foot-tags">#GnaniAI #GreatIndianAIInternshipChallenge</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/home/home.js"></script>
+</body>
+</html>

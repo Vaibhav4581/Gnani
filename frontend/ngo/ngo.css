@@ -1,0 +1,102 @@
+/* NGO screen layout. Components come from /assets/design.css (see DESIGN.md); this file places
+   them. Calmer than the kitchen: base text size, a smaller mic, and on a wide screen two
+   columns: food on the way (left), asking for food (right). */
+
+body { min-height: 100dvh; }
+
+/* ------------------------------------------------------------------ top bar and today */
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);  /* a long shelter name truncates, never pushes */
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--steel);
+}
+.topbar-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ngo-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.ngo-name span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin: 0; }
+.today div { display: flex; align-items: baseline; gap: var(--space-2); }
+.today dt { order: 2; color: var(--steel-dark); }
+.today dd { margin: 0; color: var(--leaf); font-family: var(--font-display); font-size: var(--step-3);
+            font-weight: 700; line-height: 1; }
+
+/* ------------------------------------------------------------------ layout */
+.layout {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+.layout h2 { font-size: var(--step-2); margin-bottom: var(--space-3); }
+.incoming, .ask { display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
+.incoming h2, .ask h2 { margin: 0; }
+.empty { color: var(--steel-dark); }
+
+/* ------------------------------------------------------------------ food on the way */
+.food-list { display: grid; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+.food-list .kot { max-width: none; }
+.food-item { display: grid; gap: var(--space-3); }
+
+/* The arriving food: the ticket expands with the question and the answers. */
+.arrival { display: grid; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--leaf);
+           border-radius: var(--radius-control); background: var(--leaf-soft); }
+.arrival-q { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); }
+.arrival-q h3 { font-size: var(--step-2); }
+.arrival-q > .icon { color: var(--leaf); }
+.arrival-voice { display: flex; align-items: center; gap: var(--space-3); color: var(--steel-dark); }
+.arrival-mic { width: 4rem; padding: 0; }
+.arrival-mic .icon { width: 50%; }
+.answers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); }
+.answers .btn-huge { font-size: var(--step-1); padding-inline: var(--space-3); }
+.replay { display: grid; place-items: center; width: var(--tap); height: var(--tap); margin: calc(var(--space-2) * -1) 0;
+          border: 2px solid var(--leaf); border-radius: 50%; background: var(--paper); color: var(--leaf); cursor: pointer; }
+
+/* ------------------------------------------------------------------ asking for food */
+.mic-zone { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4); }
+.ngo-mic { width: 10rem; margin: 14px; padding: var(--space-4); font-size: var(--step-0); }
+.mic-hint { margin: 0; }
+.say { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: var(--space-3);
+       padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); border-left: 4px solid var(--leaf);
+       border-radius: var(--radius-control); background: var(--leaf-soft); font-weight: 600; }
+.say > .icon { margin-top: .2em; color: var(--leaf); }
+.say p { margin: 0; }
+.ask .kot { max-width: none; }
+#more { justify-self: start; }
+
+.requests { display: grid; gap: var(--space-2); }
+.requests h3 { font-size: var(--step-1); }
+.request-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.request-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+                   gap: var(--space-2) var(--space-3); padding: var(--space-3) 0; border-top: 1px dashed var(--steel); }
+.request-what { font-weight: 600; }
+
+/* ------------------------------------------------------------------ wide screens */
+@media (min-width: 1000px) {
+  .topbar { grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-6);
+            padding-inline: var(--space-6); }
+  .topbar-row { display: contents; }
+  .today { order: 2; }
+  .conn { order: 3; }
+  .layout { max-width: 76rem; grid-template-columns: minmax(0, 1fr) minmax(0, 28rem); gap: var(--space-7);
+            padding-inline: var(--space-6); }
+  #notice { grid-column: 1 / -1; }
+  .food-list { max-width: 36rem; }
+}

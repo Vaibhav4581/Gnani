@@ -1,0 +1,13 @@
+{
+  "language": "hi-IN",
+  "kind": "report",
+  "source": "synthetic-tts",
+  "spoken": "पचास प्लेट वेज बिरयानी बची है, दोपहर दो बजे बनी थी, काक्कनाड से।",
+  "expected": {
+    "dish": "वेज बिरयानी",
+    "quantity": 50,
+    "unit": "plate",
+    "cooked_time": "14:00",
+    "location": "Kakkanad"
+  }
+}

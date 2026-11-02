@@ -1,0 +1,18 @@
+{
+  "language": "kn-IN",
+  "kind": "reply",
+  "source": "synthetic-tts+noise",
+  "spoken": "ಇಲ್ಲ, ಮೂರು ಗಂಟೆಗೆ ಮಾಡಿದ್ದು.",
+  "expected": {
+    "answer": "correction",
+    "fields": {
+      "cooked_time": "15:00"
+    }
+  },
+  "condition": "noisy",
+  "noise": {
+    "made_by": "eval/make_noisy_clips.py",
+    "from": "synthetic/06-kn-reply-correction.wav",
+    "snr_db": 10
+  }
+}

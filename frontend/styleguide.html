@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1E5631">
+  <title>Bacha Hua Khana · Design system</title>
+  <!-- Preload the Latin faces every page uses first, so the first paint doesn't swap fonts. -->
+  <link rel="preload" href="/assets/fonts/baloo2-latin-400-800.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/hind-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/design.css">
+  <style>
+    /* Layout for this page only; every component comes from design.css. */
+    .sg { max-width: 72rem; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
+    .sg-intro { display: grid; gap: var(--space-3); padding-bottom: var(--space-6);
+                border-bottom: 2px dashed var(--steel); }
+    .sg-intro p { font-size: var(--step-1); }
+    .sg section { padding: var(--space-7) 0 var(--space-6); border-bottom: 1px solid var(--steel); }
+    .sg section > h2 { margin-bottom: var(--space-2); }
+    .sg section > .lead { color: var(--steel-dark); margin-bottom: var(--space-5); }
+    .sg-split { display: grid; gap: var(--space-6); }
+    @media (min-width: 900px) { .sg-split { grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); align-items: start; } }
+
+    .swatches { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+    .swatch { display: grid; grid-template-columns: 3.5rem 1fr; gap: var(--space-3); align-items: center;
+              padding: var(--space-3) 0; border-top: 1px dashed var(--steel); }
+    .swatch-chip { width: 3.5rem; height: 3.5rem; border-radius: var(--radius-control);
+                   border: 1px solid var(--steel-dark); }
+    .swatch-name { font-family: var(--font-display); font-weight: 600; font-size: var(--step-1); line-height: 1.1; }
+    .swatch-name code { font-family: inherit; font-weight: 400; color: var(--steel-dark); font-size: var(--step-0); }
+    @media (min-width: 900px) { .swatches { grid-template-columns: 1fr 1fr; column-gap: var(--space-6); } }
+
+    .scale { display: grid; gap: var(--space-3); }
+    .scale-row { display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--space-3); align-items: baseline; }
+    .scale-row .meta { color: var(--steel-dark); font-size: var(--step--1); font-variant-numeric: tabular-nums; }
+    .display { font-family: var(--font-display); font-weight: 600; line-height: 1.1; }
+    .scripts { display: grid; gap: var(--space-4); margin-top: var(--space-5); }
+    .script { display: grid; gap: var(--space-1); padding-left: var(--space-3); border-left: 4px solid var(--steel); }
+    .script .display { font-size: var(--step-3); }
+
+    .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+    .answers { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); max-width: 28rem; }
+    .demo-note { color: var(--steel-dark); font-size: var(--step--1); margin-top: var(--space-2); }
+    .mics { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
+    .mics figure { margin: 0; display: grid; justify-items: center; gap: var(--space-2); }
+    .mics figcaption { color: var(--steel-dark); font-size: var(--step--1); }
+    .mics .mic-btn { width: 11rem; }
+    .icons { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-5); margin: 0; padding: 0; list-style: none; }
+    .icons li { display: grid; justify-items: center; gap: var(--space-1); min-width: 4.5rem; }
+    .icons .icon { width: 2rem; height: 2rem; }
+    .icons span { color: var(--steel-dark); font-size: var(--step--1); }
+    .kot-demo { display: grid; gap: var(--space-4); justify-items: start; }
+    .forms { display: grid; gap: var(--space-5); max-width: 28rem; }
+    .far { display: grid; gap: var(--space-5); padding: var(--space-5) var(--space-4);
+           background: var(--paper); border: 1px solid var(--steel); border-radius: var(--radius-slip); }
+    @media (min-width: 900px) { .far { grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); align-items: start; } }
+    .rules { display: grid; gap: var(--space-5); }
+    @media (min-width: 900px) { .rules { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .rules ul { margin: var(--space-2) 0 0; padding-left: 1.2em; }
+  </style>
+</head>
+<body>
+<main class="sg">
+  <div class="sg-intro">
+    <h1>Bacha Hua Khana design system</h1>
+    <p class="measure">The visual language of an Indian commercial kitchen. Every food report is a kitchen
+      order ticket; colours come from banana leaf, haldi, mirchi and stainless steel. Warm, practical,
+      trustworthy. Rules and reasons are in <code>DESIGN.md</code>; pages use <code>/assets/</code>.</p>
+  </div>
+
+  <!-- ============================================================ colour -->
+  <section aria-labelledby="h-colour">
+    <h2 id="h-colour">Colour</h2>
+    <p class="lead">Ratios are WCAG contrast against the colour named. AA needs 4.5:1 for text,
+      3:1 for large text, icons and control borders.</p>
+    <ul class="swatches">
+      <li class="swatch"><span class="swatch-chip" style="background:var(--leaf)"></span>
+        <div><div class="swatch-name">Leaf <code>--leaf #1E5631</code></div>
+        <p class="text-small">Primary actions, on the way, success. White text on it 8.6:1; on rice 8.3:1.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--leaf-soft)"></span>
+        <div><div class="swatch-name">Leaf soft <code>--leaf-soft #E3EFE4</code></div>
+        <p class="text-small">Success backgrounds. Leaf text on it 7.3:1.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--haldi)"></span>
+        <div><div class="swatch-name">Haldi <code>--haldi #F2A900</code></div>
+        <p class="text-small">New report, live, recording. Background only: ink on it 7.9:1, white only 2.0:1.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--haldi-soft)"></span>
+        <div><div class="swatch-name">Haldi soft <code>--haldi-soft #FFF4D6</code></div>
+        <p class="text-small">Attention backgrounds. Ink on it 14.4:1.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--mirchi)"></span>
+        <div><div class="swatch-name">Mirchi <code>--mirchi #C62E1F</code></div>
+        <p class="text-small">Deadlines, declines, errors, "nahi". On white 5.5:1; white on it 5.5:1.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--mirchi-soft)"></span>
+        <div><div class="swatch-name">Mirchi soft <code>--mirchi-soft #FBE6E3</code></div>
+        <p class="text-small">Error backgrounds. Mirchi text on it 4.6:1.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--steel)"></span>
+        <div><div class="swatch-name">Steel <code>--steel #D5DADF</code></div>
+        <p class="text-small">Dividers, decoration, inactive fills. Only 1.4:1 on white, so never a control's only border.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--steel-dark)"></span>
+        <div><div class="swatch-name">Steel dark <code>--steel-dark #5F6A74</code></div>
+        <p class="text-small">Secondary text and control borders. On rice 5.3:1; on steel 3.9:1 (large text only).</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--rice)"></span>
+        <div><div class="swatch-name">Rice <code>--rice #FAFAF7</code></div>
+        <p class="text-small">Page background.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--paper)"></span>
+        <div><div class="swatch-name">Paper <code>--paper #FFFFFF</code></div>
+        <p class="text-small">The KOT slip and inputs.</p></div></li>
+      <li class="swatch"><span class="swatch-chip" style="background:var(--ink)"></span>
+        <div><div class="swatch-name">Ink <code>--ink #17261C</code></div>
+        <p class="text-small">Body text. On rice 15.1:1.</p></div></li>
+    </ul>
+  </section>
+
+  <!-- ============================================================ type -->
+  <section aria-labelledby="h-type">
+    <h2 id="h-type">Type</h2>
+    <p class="lead">Baloo 2 for display, numbers and buttons (Baloo Chettan 2 for Malayalam, Baloo Tamma 2
+      for Kannada). Hind for body text, with Noto Sans Malayalam and Kannada behind it. All self-hosted.</p>
+    <div class="sg-split">
+      <div class="scale">
+        <div class="scale-row"><span class="meta">3.815 · hero</span><span class="hero-number">128</span></div>
+        <div class="scale-row"><span class="meta">2.441 · qty</span><span class="qty">50 plates</span></div>
+        <div class="scale-row"><span class="meta">1.953 · h2</span><span class="display" style="font-size:var(--step-3)">Food is on the way</span></div>
+        <div class="scale-row"><span class="meta">1.563 · h3</span><span class="display" style="font-size:var(--step-2)">Veg biryani</span></div>
+        <div class="scale-row"><span class="meta">1.25 · button</span><span class="display" style="font-size:var(--step-1)">Send report</span></div>
+        <div class="scale-row"><span class="meta">1 · body</span><span>Collect from Annapurna Mess, Kakkanad, by 6 pm.</span></div>
+        <div class="scale-row"><span class="meta">0.875 · small</span><span class="text-small text-muted">Cooked at 2:00 pm · 4.3 km away</span></div>
+      </div>
+      <div class="scripts">
+        <div class="script" lang="hi">
+          <span class="display">पचास प्लेट वेज बिरयानी</span>
+          <span>खाना ढका हुआ और साफ़ बर्तन में है। रात 11 बजे तक पिकअप।</span>
+        </div>
+        <div class="script" lang="ml">
+          <span class="display">50 പ്ലേറ്റ് ബിരിയാണി</span>
+          <span>ഭക്ഷണം മൂടി, വൃത്തിയുള്ള പാത്രത്തിലാണ്. രാത്രി 11 മണിക്ക് മുമ്പ് പിക്കപ്പ്.</span>
+        </div>
+        <div class="script" lang="kn">
+          <span class="display">50 ಪ್ಲೇಟ್ ಬಿರಿಯಾನಿ</span>
+          <span>ಆಹಾರ ಮುಚ್ಚಿದೆ, ಸ್ವಚ್ಛ ಪಾತ್ರೆಯಲ್ಲಿದೆ. ರಾತ್ರಿ 11 ಗಂಟೆಯ ಒಳಗೆ ಪಿಕಪ್.</span>
+        </div>
+        <div class="script">
+          <span class="display">50 plates of veg biryani</span>
+          <span>Covered and in a clean container. Pick up by 11 pm.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ buttons -->
+  <section aria-labelledby="h-buttons">
+    <h2 id="h-buttons">Buttons</h2>
+    <p class="lead">14px corners, at least 56px tall; 88px on kitchen and volunteer screens. The label says
+      exactly what happens.</p>
+    <div class="stack">
+      <div class="row">
+        <button class="btn btn-primary" type="button">Send report</button>
+        <button class="btn btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#play"/></svg>Play again</button>
+        <button class="btn btn-danger" type="button">Cancel pickup</button>
+        <button class="btn btn-primary" type="button" disabled>Sending report</button>
+      </div>
+      <button class="btn btn-primary btn-huge" type="button" style="max-width:28rem">Yes, I'll pick it up</button>
+      <div class="answers">
+        <button class="btn btn-primary btn-huge btn-bilingual" type="button" lang="hi">Haan<span class="btn-en" lang="en">Yes</span></button>
+        <button class="btn btn-danger btn-huge btn-bilingual" type="button" lang="hi">Nahi<span class="btn-en" lang="en">No</span></button>
+        <button class="btn btn-primary btn-huge btn-bilingual" type="button" lang="ml">അതെ<span class="btn-en" lang="en">Yes</span></button>
+        <button class="btn btn-danger btn-huge btn-bilingual" type="button" lang="ml">ഇല്ല<span class="btn-en" lang="en">No</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ status -->
+  <section aria-labelledby="h-status">
+    <h2 id="h-status">Status</h2>
+    <p class="lead">Colour, icon and word together, never colour alone.</p>
+    <div class="row" id="pills"></div>
+  </section>
+
+  <!-- ============================================================ KOT -->
+  <section aria-labelledby="h-kot">
+    <h2 id="h-kot">KOT slip</h2>
+    <p class="lead">Every food report is a kitchen order ticket. It fills in line by line as the app understands
+      the kitchen, then travels through the app. A value not heard yet is a blank dashed line. The pickup
+      countdown is ink while there is time and turns mirchi at 30 minutes, so red always means hurry.
+      The only element with a shadow.</p>
+    <div class="sg-split">
+      <div class="kot-demo">
+        <div id="kot-live"></div>
+        <div class="row">
+          <button class="btn btn-primary" type="button" id="kot-next">Write the next line</button>
+          <button class="btn btn-secondary" type="button" id="kot-reset">Start again</button>
+        </div>
+        <p class="demo-note" id="kot-step" aria-live="polite">Heard so far: the dish.</p>
+      </div>
+      <div class="kot-demo" id="kot-done"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ reading far -->
+  <section aria-labelledby="h-far">
+    <h2 id="h-far">Reading from a metre away</h2>
+    <p class="lead">Kitchen and volunteer screens put <code>class="reading-far"</code> on the body: body text
+      steps up to 20px and small text to 16px. NGO and dashboard screens keep the base sizes.</p>
+    <div class="far reading-far">
+      <div id="kot-far"></div>
+      <div class="stack">
+        <p>Collect from Annapurna Mess, Kakkanad, and deliver to Karunya Children's Home by 1 am.</p>
+        <p class="text-small text-muted">Small text at this size: 4.3 km to the kitchen · 5.4 km in total</p>
+        <div class="answers">
+          <button class="btn btn-primary btn-huge btn-bilingual" type="button" lang="hi">Haan<span class="btn-en" lang="en">Yes</span></button>
+          <button class="btn btn-danger btn-huge btn-bilingual" type="button" lang="hi">Nahi<span class="btn-en" lang="en">No</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ mic -->
+  <section aria-labelledby="h-mic">
+    <h2 id="h-mic">Mic button</h2>
+    <p class="lead">A perfect circle, the biggest thing on a voice screen. Haldi while recording, with a pulse.
+      Press and hold the first one.</p>
+    <div class="mics">
+      <figure>
+        <button class="mic-btn" type="button" id="mic-demo">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#mic"/></svg>
+          <span id="mic-demo-label">Hold to report food</span>
+        </button>
+        <figcaption>Ready</figcaption>
+      </figure>
+      <figure>
+        <button class="mic-btn is-recording" type="button" tabindex="-1" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#stop"/></svg>
+          <span>Listening… let go when done</span>
+        </button>
+        <figcaption>Recording</figcaption>
+      </figure>
+      <figure>
+        <button class="mic-btn" type="button" disabled>
+          <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#mic"/></svg>
+          <span>Understanding…</span>
+        </button>
+        <figcaption>Busy</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================================ icons -->
+  <section aria-labelledby="h-icons">
+    <h2 id="h-icons">Icons</h2>
+    <p class="lead"><code>&lt;svg class="icon" aria-hidden="true"&gt;&lt;use href="/assets/icons.svg#mic"/&gt;&lt;/svg&gt;</code>.
+      An icon-only button needs an <code>aria-label</code>.</p>
+    <ul class="icons" id="icons"></ul>
+  </section>
+
+  <!-- ============================================================ forms -->
+  <section aria-labelledby="h-forms">
+    <h2 id="h-forms">Forms and messages</h2>
+    <p class="lead">Controls have a steel-dark border and a 3px leaf focus ring. Messages say what happened and
+      what to do, without apologising.</p>
+    <div class="sg-split">
+      <div class="forms">
+        <div class="field">
+          <label class="field-label" for="f-kitchen">Kitchen</label>
+          <select class="select" id="f-kitchen">
+            <option>Annapurna Mess, Kakkanad · हिन्दी</option>
+            <option>Malabar Kitchen, Edappally · മലയാളം</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="f-say">What would you say?</label>
+          <input class="input" id="f-say" placeholder="pachaas plate biryani, do baje bana" aria-describedby="f-say-hint">
+          <span class="field-hint" id="f-say-hint">Mock mode only. Typed text stands in for speech.</span>
+        </div>
+        <div class="field has-error">
+          <label class="field-label" for="f-mic">Microphone</label>
+          <select class="select" id="f-mic" aria-describedby="f-mic-err"><option>Default microphone</option></select>
+          <span class="field-error" id="f-mic-err"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#cross"/></svg>
+            No speech heard. Check that this microphone is switched on, then hold the button again.</span>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="callout callout--error" role="alert"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#cross"/></svg>
+          <p>The pickup time for this food has passed. Report fresh food with today's cooking time.</p></div>
+        <div class="callout callout--attention"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#flame"/></svg>
+          <p>Cover the food, then say haan.</p></div>
+        <div class="callout callout--success"><svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#check"/></svg>
+          <p>John Mathew is on the way. About 25 minutes.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ rules -->
+  <section aria-labelledby="h-rules">
+    <h2 id="h-rules">Rules to keep</h2>
+    <div class="rules">
+      <div><h3>Copy</h3><ul>
+        <li>Sentence case. No all-caps, no labels above headings, no arrows on buttons.</li>
+        <li>Primary language big, English small underneath.</li>
+      </ul></div>
+      <div><h3>Motion</h3><ul>
+        <li>Only after an action or a live event: recording pulse, a line writing in, a ticket moving.</li>
+        <li>Nothing animates on load except the first ticket. Reduced motion turns it all off.</li>
+      </ul></div>
+      <div><h3>Access</h3><ul>
+        <li>AA contrast, 3px leaf focus ring, 56px targets (88px on kitchen and volunteer).</li>
+        <li>Works at 360px with no sideways scroll.</li>
+      </ul></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+  import { STATUS, icon, renderKot, setKotStatus, statusPill, updateKotLine } from "/assets/kot.js";
+
+  // Status pills: one per distinct status word.
+  const seen = new Set();
+  for (const [status, s] of Object.entries(STATUS)) {
+    if (seen.has(s.word)) continue;
+    seen.add(s.word);
+    document.getElementById("pills").append(statusPill(status));
+  }
+
+  // Icons, by name.
+  for (const name of ["mic", "stop", "play", "check", "cross", "clock", "pin", "phone", "bike",
+                      "veg", "non-veg", "people", "flame"]) {
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    label.textContent = name;
+    li.append(icon(name), label);
+    document.getElementById("icons").append(li);
+  }
+
+  // A live ticket that fills in the way the kitchen screen will.
+  const at = (h, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString(); };
+  const inMinutes = (m) => new Date(Date.now() + m * 60_000).toISOString();
+  const steps = [
+    ["quantity", 50, "the quantity"], ["unit", "plate", "the unit"],
+    ["cooked_at", inMinutes(-95), "the cooking time"], ["deadline", inMinutes(145), "the pickup deadline"],
+    ["status", "SAFETY_CHECK", "confirmed by voice"], ["veg", true, "veg: yes"],
+    ["status", "MATCHING", "covered: yes, finding a volunteer"], ["status", "ASSIGNED", "a volunteer accepted"],
+    ["status", "DELIVERED", "delivered"],
+  ];
+  let live, step;
+  function startLive() {
+    step = 0;
+    live = renderKot({ id: 42, kitchen: "Annapurna Mess, Kakkanad", dish: "Veg biryani", status: "CONFIRMING" },
+                     { print: true });
+    document.getElementById("kot-live").replaceChildren(live);
+    document.getElementById("kot-step").textContent = "Heard so far: the dish.";
+    document.getElementById("kot-next").disabled = false;
+  }
+  document.getElementById("kot-next").addEventListener("click", () => {
+    const [field, value, said] = steps[step++];
+    if (field === "status") setKotStatus(live, value); else updateKotLine(live, field, value);
+    document.getElementById("kot-step").textContent = `Just added: ${said}.`;
+    if (step === steps.length) document.getElementById("kot-next").disabled = true;
+  });
+  document.getElementById("kot-reset").addEventListener("click", startLive);
+  startLive();
+
+  // A finished ticket for comparison, and one running out of time.
+  document.getElementById("kot-done").append(
+    renderKot({ id: 41, kitchen: "Malabar Kitchen, Edappally", dish: "ബിരിയാണി", quantity: 20, unit: "kg",
+                veg: false, cooked_at: at(12), deadline: at(16), status: "DELIVERED" }),
+    renderKot({ id: 43, kitchen: "Udupi Grand, Vyttila", dish: "ಬಿಸಿಬೇಳೆ ಬಾತ್", quantity: 30, unit: "plate",
+                veg: true, cooked_at: inMinutes(-215), deadline: inMinutes(25), status: "OFFERED" }));
+
+  // The same ticket at reading-far size, with time to spare (an ink countdown).
+  document.getElementById("kot-far").append(
+    renderKot({ id: 44, kitchen: "Annapurna Mess, Kakkanad", dish: "Veg biryani", quantity: 50, unit: "plate",
+                veg: true, cooked_at: inMinutes(-60), deadline: inMinutes(180), status: "ASSIGNED" }));
+
+  // Press and hold the mic demo.
+  const mic = document.getElementById("mic-demo");
+  const label = document.getElementById("mic-demo-label");
+  const press = (on) => {
+    mic.classList.toggle("is-recording", on);
+    label.textContent = on ? "Listening… let go when done" : "Hold to report food";
+    mic.querySelector("use").setAttribute("href", `/assets/icons.svg#${on ? "stop" : "mic"}`);
+  };
+  mic.addEventListener("pointerdown", () => press(true));
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) mic.addEventListener(ev, () => press(false));
+  mic.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") press(true); });
+  mic.addEventListener("keyup", () => press(false));
+</script>
+</body>
+</html>
