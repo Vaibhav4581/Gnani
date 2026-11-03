@@ -40,7 +40,11 @@
 
     <section class="incoming" aria-labelledby="incoming-h">
       <h2 id="incoming-h"></h2>
-      <p class="empty" id="incoming-empty"></p>
+      <div class="empty-state has-kolam" id="incoming-empty">
+        <svg class="kolam kolam--top-right" aria-hidden="true"><use href="/assets/illustrations.svg#kolam"/></svg>
+        <svg class="illus" viewBox="0 0 110 92" aria-hidden="true"><use href="/assets/illustrations.svg#shelter"/></svg>
+        <p id="incoming-empty-text"></p>
+      </div>
       <ol class="food-list" id="food-list" aria-live="polite"></ol>
     </section>
 
@@ -72,7 +76,13 @@
           <svg class="icon" aria-hidden="true"><use id="talk-icon" href="/assets/icons.svg#mic"/></svg>
           <span id="talk-label"></span>
         </button>
-        <p class="text-muted mic-hint" id="ask-hint"></p>
+        <div class="mic-side">
+          <p class="text-muted mic-hint" id="ask-hint"></p>
+          <div class="example-box" id="example-box" hidden>
+            <p class="example-lead" id="example-lead"></p>
+            <div class="examples" id="examples"></div>
+          </div>
+        </div>
       </div>
       <div class="say" id="say" hidden aria-live="polite">
         <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#speaker"/></svg>
@@ -88,7 +98,7 @@
       </div>
       <button class="btn btn-secondary btn-bilingual" id="more" type="button" hidden></button>
 
-      <section class="requests" aria-labelledby="requests-h">
+      <section class="requests pinboard" aria-labelledby="requests-h">
         <h3 id="requests-h"></h3>
         <ol class="request-list" id="request-list"></ol>
       </section>

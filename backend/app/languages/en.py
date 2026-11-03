@@ -4,6 +4,22 @@ from datetime import datetime
 from . import (AskPrompts, Language, Lexicon, NeedPrompts, OfferPrompts, Prompts,
                SafetyPrompts, clock_12h)
 from .areas import AREAS_LATIN
+from .hi import SCREEN_DISH as HINDI_DISH
+from .kn import SPOKEN_DISH as KANNADA_DISH
+from .ml import SPOKEN_DISH as MALAYALAM_DISH
+
+
+def _to_latin(spoken: dict[str, str]) -> dict[str, str]:
+    """Latin -> own script, turned round; the first Latin spelling listed wins."""
+    out: dict[str, str] = {}
+    for latin, native in spoken.items():
+        out.setdefault(native, latin)
+    return out
+
+
+# A dish heard in Devanagari, Malayalam or Kannada script, as the English screens write it.
+SCREEN_DISH = {**HINDI_DISH, **_to_latin(MALAYALAM_DISH), **_to_latin(KANNADA_DISH),
+               "ಪಲಾವ್": "pulao"}  # as Prisma wrote it in the live test, 3 Nov
 
 LEXICON = Lexicon(
     numbers={
@@ -94,10 +110,11 @@ PROMPTS = Prompts(
     repeat_hint="same as yesterday",
     at_time=lambda dt: f"at {_clock(dt)}",
     by_time=lambda dt: f"by {_clock(dt)}",
+    dish_words=SCREEN_DISH,
 )
 
 OFFER = OfferPrompts(
-    alert="New pickup! {quantity} {unit} of {dish} at {area}, {distance} kilometres away. "
+    alert="New pickup! {quantity} {unit} of {dish} at {area}, {distance} {km} away. "
           "{safety}Pickup needed {deadline}. Can you take it? Say yes or no.",
     accepted="Thank you! This pickup is yours. The kitchen has been told.",
     declined="Okay, we will ask someone else.",
@@ -105,13 +122,14 @@ OFFER = OfferPrompts(
     unclear="Sorry, please say yes or no.",
     food_word="food",
     alert_delivery="New pickup! {quantity} {unit} of {dish}. Collect at {area} and deliver to "
-                   "{ngo} in {ngo_area}, {distance} kilometres in total. {safety}Pickup needed {deadline}. "
+                   "{ngo} in {ngo_area}, {distance} {km} in total. {safety}Pickup needed {deadline}. "
                    "Can you take it? Say yes or no.",
     shelter_word="the shelter",
     withdrawn="The kitchen has cancelled this pickup. You don't need to go.",
     food_safety="The food is {food_type} and covered. ",
     veg_word="vegetarian",
     non_veg_word="non-vegetarian",
+    km=("kilometre", "kilometres"),
 )
 
 NEED = NeedPrompts(
@@ -161,6 +179,8 @@ LANGUAGE = Language(
     code="en-IN", name="English", native_name="English", stt_code="en-IN",
     tts_language="en-IN", tts_voice="Kaveri", lexicon=LEXICON, prompts=PROMPTS,
     offer=OFFER, scripts=frozenset({"latin"}),
+    report_examples=('Fifty plates of biryani, made at 2 pm', 'Ten kilos of veg pulao, cooked at 1 pm', 'Thirty plates of chapati and curry, made at 3 pm'),
+    need_examples=('We need food for 40 people by 9 pm', 'Veg food for 50 children by 7 pm, please'),
     mock_report="We have 50 plates of veg biryani left, cooked at 2 pm, from Tripunithura",
     mock_reply="yes that's right",
     need=NEED,

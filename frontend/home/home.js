@@ -153,6 +153,70 @@ async function loadEval() {
   $("eval").hidden = false;
 }
 
+// ---------------------------------------------------------------- tabs (laptop only)
+
+// On a laptop the page is one screen and the top bar's tabs switch what fills it: the hero with
+// "Open the app" under it first, then each section on its own. On a phone the sections read one
+// after another, as plain sections.
+const ONE_SCREEN = matchMedia("(min-width: 1000px) and (min-height: 600px)");  // as home.css
+const TABS = [["home", "Home"], ["how", "How it works"], ["gnani", "Built on Gnani AI"], ["about", "About"]];
+const SHOWN_WITH = { open: "home" };  // a section that isn't a tab, and the tab it stands under
+let activeTab = TABS.some(([id]) => id === location.hash.slice(1)) ? location.hash.slice(1) : "home";
+
+function buildTabs() {
+  $("tablist").replaceChildren(...TABS.map(([id, label]) => {
+    const tab = el("button", "tab", label);
+    Object.assign(tab, { type: "button", id: `tab-${id}` });
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-controls", id);
+    tab.addEventListener("click", () => selectTab(id));
+    return tab;
+  }));
+  $("tablist").addEventListener("keydown", (e) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1, Home: -TABS.length, End: TABS.length }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const at = TABS.findIndex(([id]) => id === activeTab);
+    const next = Math.max(0, Math.min(TABS.length - 1, at + step));
+    selectTab(TABS[next][0]);
+    $(`tab-${TABS[next][0]}`).focus();
+  });
+  ONE_SCREEN.addEventListener("change", applyTabs);
+  applyTabs();
+}
+
+function selectTab(id) {
+  activeTab = id;
+  applyTabs();
+}
+
+function applyTabs() {
+  const on = ONE_SCREEN.matches;
+  $("tablist").hidden = !on;
+  for (const [id] of TABS) {
+    const panel = $(id);
+    const tab = $(`tab-${id}`);
+    const chosen = id === activeTab;
+    tab.setAttribute("aria-selected", String(chosen));
+    tab.tabIndex = chosen ? 0 : -1;
+    panel.hidden = on && !chosen;
+    if (on) {
+      panel.setAttribute("role", "tabpanel");
+      panel.setAttribute("aria-labelledby", tab.id);
+      panel.tabIndex = 0;  // reachable by Tab even when it holds no link
+    } else {
+      panel.removeAttribute("role");  // a plain section again, named by its own heading
+      panel.removeAttribute("tabindex");
+      const heading = panel.querySelector("h1, h2");
+      if (heading) panel.setAttribute("aria-labelledby", heading.id);
+      else panel.removeAttribute("aria-labelledby");
+    }
+  }
+  for (const [id, tab] of Object.entries(SHOWN_WITH)) $(id).hidden = on && tab !== activeTab;
+  $("site-h").hidden = !on || activeTab === "home";
+}
+
+buildTabs();
 miniScreens();
 loadCount();
 loadEval();

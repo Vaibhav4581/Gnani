@@ -3,9 +3,10 @@
 // slides to its new lane (FLIP, 300 ms, off under reduced motion). Clicking a slip opens its full
 // timeline beside the board. Below: voice pipeline latency, open needs and a schematic map.
 // Everything stays live over /ws/dashboard (changed cards, needs, impact, who is on duty).
-import { $, getJson, liveSocket, postJson } from "/shared/common.js";
+import { $, failureKey, getJson, liveSocket, postJson, store, stored } from "/shared/common.js";
 import { NEED_STATUS, clock, icon, renderKot, setKotFields, setKotStatus, statusPill,
          ticketNumber } from "/assets/kot.js";
+import { drawMap, svgEl } from "/assets/map.js";
 
 const LANES = ["reported", "finding", "on_way", "delivered"];
 const UNITS = { plate: "plates", kg: "kg", litre: "litres", box: "boxes" };
@@ -33,6 +34,24 @@ let playing = null;  // the play button whose clip is playing
 function init() {
   getJson("/config").then((cfg) => ($("phone-mode").hidden = !cfg.telephony)).catch(() => {});
   $("reset").addEventListener("click", resetDemo);
+  $("explain").addEventListener("click", () => toggleExplain());
+  toggleExplain(stored("bhk.explain") !== "off");
+  new ResizeObserver(() => fitLanes()).observe($("board"));
+  const side = new ResizeObserver(() => fitSide());  // new needs, timings, a resized window
+  document.querySelectorAll(".below, .below .panel").forEach((node) => side.observe(node));
+  ONE_SCREEN.addEventListener("change", fitLanes);
+  // map <-> board: a dot's slips light up, and a slip's dots
+  $("map").addEventListener("pointerover", (e) => linkFromDot(e.target));
+  $("map").addEventListener("focusin", (e) => linkFromDot(e.target));
+  $("map").addEventListener("pointerout", unlink);
+  $("map").addEventListener("focusout", unlink);
+  for (const lane of [...LANES, "closed"]) {
+    const list = $(`lane-${lane}`);
+    list.addEventListener("pointerover", (e) => linkFromSlip(e.target));
+    list.addEventListener("focusin", (e) => linkFromSlip(e.target));
+    list.addEventListener("pointerout", unlink);
+    list.addEventListener("focusout", unlink);
+  }
   $("d-close").addEventListener("click", closeDetail);
   $("d-pickup").addEventListener("click", () => markPickedUp(state.openId));
   $("d-share").addEventListener("click", () => openShare(state.cards.get(state.openId)));
@@ -62,7 +81,14 @@ function init() {
 // ---------------------------------------------------------------- data
 
 async function loadBoard() {
-  const board = await getJson("/dashboard/board");
+  let board;
+  try {
+    board = await getJson("/dashboard/board");
+  } catch (err) {
+    document.body.classList.remove("is-loading");
+    return showProblem("load", err);
+  }
+  $("problem").hidden = true;
   state.cards = new Map(board.cards.map((c) => [c.id, c]));
   state.onDuty = board.on_duty || [];
   state.places = board.map;
@@ -107,8 +133,9 @@ async function markPickedUp(id) {
   if (!id) return;
   try {
     await postJson(`/reports/${id}/picked-up?by=dashboard`);
+    $("problem").hidden = true;
   } catch (err) {
-    alert(err.message);
+    showProblem("pickup", err);
   }
 }
 
@@ -116,9 +143,39 @@ async function resetDemo() {
   if (!confirm("Reset the demo? This deletes every report, offer, need and event, and restores the demo kitchens, volunteers and NGOs.")) return;
   try {
     await postJson("/admin/seed?confirm=true");
+    $("problem").hidden = true;
   } catch (err) {
-    alert(err.message);
+    showProblem("reset", err);
   }
+}
+
+// Every failure says what happened and what to do next, on the page (never an alert box).
+const FAILED = {
+  load: ["Couldn't load the board", "It tries again by itself when the connection comes back."],
+  reset: ["Couldn't reset the demo", "Then press Reset demo again."],
+  pickup: ["Couldn't mark it picked up", "Then press Mark picked up again."],
+};
+const WHY = {
+  noNetwork: "this computer is offline. Check the Wi-Fi.",
+  unreachable: "can't reach the server. Check that it's running.",
+  serverDown: "the server had a problem. Wait a moment.",
+};
+
+function showProblem(action, err) {
+  const key = failureKey(err);
+  const [what, next] = FAILED[action];
+  $("problem-text").textContent = `${what}: ${WHY[key] || `${err.message}.`} ${next}`;
+  $("problem").hidden = false;
+}
+
+// "What am I looking at?": one-line notes over the impact strip and under each lane's shelf.
+// On for a first visit (a judge seeing it cold) until someone turns it off; remembered.
+function toggleExplain(force) {
+  const on = typeof force === "boolean" ? force : $("explain").getAttribute("aria-pressed") !== "true";
+  if (typeof force !== "boolean") store("bhk.explain", on ? "on" : "off");
+  $("explain").setAttribute("aria-pressed", String(on));
+  document.querySelectorAll(".explain").forEach((p) => (p.hidden = !on));
+  fitLanes();
 }
 
 function showConn() {
@@ -145,14 +202,86 @@ function renderBoard() {
     const items = sorted.filter((c) => laneOf(c) === lane).map((c) => state.nodes.get(c.id));
     $(`n-${lane}`).textContent = items.length;
     $(`lane-${lane}`).replaceChildren(...(items.length || lane === "closed" ? items
-      : [el("li", "lane-empty", "Nothing here yet")]));
+      : [emptyLane(lane)]));
   }
   $("closed").hidden = !sorted.some((c) => laneOf(c) === "closed");
   state.nodes.forEach((li, id) => (li.dataset.lane = laneOf(state.cards.get(id))));
   // Screen readers hear each slip that arrives or moves lane, in a word: "#BHK-0003, On the way: ..."
   if (moved.length) $("announce").textContent = moved.map((c) =>
     `${ticketNumber(c.id)}, ${LANE_NAMES[laneOf(c)]}: ${c.badge}`).join(". ");
+  fitLanes();
   if (!reducedMotion()) slide(before);
+}
+
+// On a laptop the board is one screen and a lane never scrolls: when it runs out of room its
+// oldest slips fold to their heading (kitchen, number, status), oldest first, and if even that
+// is too tall the oldest step behind "+N more", which opens the lane in full (dashboard.css).
+const ONE_SCREEN = matchMedia("(min-width: 1200px) and (min-height: 600px)");  // as dashboard.css
+
+function fitLanes() {
+  fitSide();
+  for (const lane of LANES) {
+    const list = $(`lane-${lane}`);
+    const items = [...list.querySelectorAll(":scope > .slip-item")];
+    list.querySelector(".lane-more")?.remove();
+    items.forEach((li) => { li.classList.remove("is-folded"); li.hidden = false; });
+    if (!ONE_SCREEN.matches || list.classList.contains("is-open")) {
+      if (list.classList.contains("is-open")) list.append(moreButton(list, 0));
+      continue;
+    }
+    const over = () => list.scrollHeight > list.clientHeight + 1;
+    for (let i = items.length - 1; i >= 0 && over(); i--) items[i].classList.add("is-folded");
+    if (!over()) continue;
+    const more = moreButton(list, 0);
+    list.append(more);
+    let hidden = 0;
+    for (let i = items.length - 1; i >= 1 && over(); i--) {
+      items[i].hidden = true;
+      more.querySelector("button").textContent = `+${++hidden} more`;
+    }
+    if (!hidden) more.remove();
+  }
+}
+
+// The side column fits the same way: the map gives up whatever height the needs and the voice
+// timings under it need (never below 6rem).
+function fitSide() {
+  const map = $("map");
+  map.style.removeProperty("max-height");
+  const side = map.closest(".below");
+  const over = side.scrollHeight - side.clientHeight;
+  if (!ONE_SCREEN.matches || over <= 0) return;
+  const min = 6 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+  map.style.maxHeight = `${Math.max(min, map.getBoundingClientRect().height - over - 2)}px`;
+}
+
+function moreButton(list, n) {
+  const li = el("li", "lane-more");
+  const btn = el("button", "quiet-btn", n ? `+${n} more` : "Show less");
+  btn.type = "button";
+  btn.addEventListener("click", () => {
+    list.classList.toggle("is-open");
+    fitLanes();
+  });
+  li.append(btn);
+  return li;
+}
+
+// An empty lane: a dashed slip outline (torn bottom edge) saying what arrives here.
+const LANE_EMPTY = {
+  reported: "New reports arrive here when a kitchen speaks.",
+  finding: "Confirmed food waits here while volunteers are asked.",
+  on_way: "Food moves here when a volunteer says yes.",
+  delivered: "Finished rescues land here.",
+};
+
+function emptyLane(lane) {
+  const li = el("li", "lane-empty");
+  const outline = svgEl("svg", { viewBox: "0 0 200 120", preserveAspectRatio: "none", "aria-hidden": "true" });
+  const teeth = Array.from({ length: 10 }, (_, i) => `L${190 - i * 20} 119 L${180 - i * 20} 113`).join(" ");
+  outline.append(svgEl("path", { d: `M1 1 H199 V113 ${teeth} Z` }));  // right to left along the tear
+  li.append(outline, el("p", null, LANE_EMPTY[lane] || ""));
+  return li;
 }
 
 // FLIP: each slip starts where it was and glides to where it is now.
@@ -182,6 +311,7 @@ function slipItem(c) {
   open.type = "button";
   open.append(el("span", "visually-hidden", `Open ${ticketNumber(c.id)}, ${c.kitchen}`));
   open.addEventListener("click", () => openDetail(c.id));
+  open.dataset.id = c.id;
   slip.append(open);
   setKotStatus(slip, pillStatus(c), { word: c.badge });
   drawExtras(slip, c);
@@ -240,6 +370,7 @@ function openDetail(id) {
 }
 
 function closeDetail() {
+  delete $("detail").dataset.shown;  // ids restart after a demo reset
   if (!state.openId && $("detail").hidden) return;
   const id = state.openId;
   state.openId = null;
@@ -257,11 +388,33 @@ function markSelected() {
 }
 
 async function loadDetail(id) {
+  const fresh = $("detail").dataset.shown !== String(id);
+  if (fresh) {  // a different slip: its ticket, blank and breathing, until the timeline arrives
+    const blank = renderKot({ status: "RECORDED" }, { lines: ["food", "deadline"] });
+    blank.classList.add("is-skeleton");
+    $("d-skeleton").replaceChildren(blank);
+    $("d-skeleton").hidden = false;
+    $("d-number").textContent = ticketNumber(id);
+    $("d-title").textContent = state.cards.get(id)?.kitchen || "";
+    $("detail").classList.add("is-loading-detail");
+    $("detail").setAttribute("aria-busy", "true");
+  }
   let t;
   try {
     t = await getJson(`/dashboard/reports/${id}`);
-  } catch { return; }
+  } catch (err) {
+    if (state.openId === id) {
+      $("d-skeleton").hidden = true;
+      $("detail").removeAttribute("aria-busy");
+      showProblem("load", err);
+    }
+    return;
+  }
   if (state.openId !== id || !t.card) return;
+  $("detail").dataset.shown = String(id);
+  $("d-skeleton").hidden = true;
+  $("detail").classList.remove("is-loading-detail");
+  $("detail").removeAttribute("aria-busy");
   const c = t.card;
   state.cards.set(c.id, { ...state.cards.get(c.id), ...c });
   $("d-number").replaceChildren(`${ticketNumber(c.id)} · `, el("span", "lang-name", c.native_name));
@@ -418,61 +571,55 @@ function renderNeeds(needs = []) {
   }) : [el("li", "need-row is-empty", "No shelter is waiting for food right now.")]));
 }
 
+// ---------------------------------------------------------------- map <-> board
+
+function linkFromDot(target) {
+  const dot = target.closest?.(".m-dot");
+  if (!dot) return;
+  const id = Number(dot.dataset.id);
+  const key = { kitchen: "kitchen_id", ngo: "ngo_id", vol: "volunteer_id" }[dot.dataset.kind];
+  dot.classList.add("is-related");
+  $("content").querySelector(".board").classList.add("is-linking");
+  state.nodes.forEach((li, cid) => li.classList.toggle("is-related", state.cards.get(cid)?.[key] === id));
+}
+
+function linkFromSlip(target) {
+  const btn = target.closest?.(".slip-open") || target.closest?.(".slip-item")?.querySelector(".slip-open");
+  const c = btn && state.cards.get(Number(btn.dataset.id));
+  if (!c) return;
+  const svg = $("map");
+  for (const [kind, id] of [["kitchen", c.kitchen_id], ["ngo", c.ngo_id], ["vol", c.volunteer_id]]) {
+    if (id != null) svg.querySelector(`.m-dot[data-kind="${kind}"][data-id="${id}"]`)?.classList.add("is-related");
+  }
+}
+
+function unlink() {
+  $("content").querySelector(".board").classList.remove("is-linking");
+  state.nodes.forEach((li) => li.classList.remove("is-related"));
+  $("map").querySelectorAll(".m-dot.is-related").forEach((d) => d.classList.remove("is-related"));
+}
+
 // ---------------------------------------------------------------- the map
 
-const SVGNS = "http://www.w3.org/2000/svg";
-const MAP_W = 360;   // the height follows the area's own shape (Kochi is taller than wide)
-const MAP_PAD = 40;
-
+// Drawn by /assets/map.js. A slip open: its route bold (dashed while still asking), the rest
+// faint. Nothing open: every route on the way is drawn. Bold routes are named under the map.
 function renderMap() {
   const p = state.places;
   if (!p) return;
-  const all = [...p.kitchens, ...p.volunteers, ...p.ngos, ...p.areas];
-  const { at, height } = projector(all);
-  const svg = $("map");
-  svg.setAttribute("viewBox", `0 0 ${MAP_W} ${height}`);
-  const duty = new Set(state.onDuty);
-  const nodes = [];
-
-  for (const a of p.areas) {
-    const [x, y] = at(a);
-    nodes.push(svgEl("circle", { cx: x, cy: y, r: 32, class: "m-area" }));
-    nodes.push(svgEl("text", { x, y: y - 40, "text-anchor": "middle", class: "m-area-label" }, a.name));
-  }
-  // Routes under the dots. A slip open: its route bold (dashed while still asking), the rest
-  // faint. Nothing open: every route on the way is drawn, with labels.
   const live = [...state.cards.values()].filter((c) => ["finding", "on_way"].includes(laneOf(c)));
   const open = state.cards.get(state.openId);
-  const routes = open ? [open, ...live.filter((c) => c.id !== open.id)] : live;
-  const named = [];  // [tone, stops] for the routes named under the map
-  for (const c of routes.reverse()) {
+  const ordered = open ? [open, ...live.filter((c) => c.id !== open.id)] : live;
+  const routes = [];
+  const named = [];  // [tone, stops]
+  for (const c of ordered.reverse()) {
     const stops = routeStops(c, p);
     if (stops.length < 2) continue;
     const lead = open ? c.id === open.id : laneOf(c) === "on_way";
     const tone = lead ? (laneOf(c) === "finding" ? "is-asking" : "is-active") : "";
-    nodes.push(svgEl("polyline", { points: stops.map((s) => at(s).join(",")).join(" "),
-                                   class: `m-route ${tone}` }));
+    routes.push({ stops, tone });
     if (lead) named.unshift([tone, stops]);
   }
-  for (const v of p.volunteers) {
-    const [x, y] = at(v);
-    const dot = svgEl("circle", { cx: x, cy: y, r: 5.5, class: `m-vol${duty.has(v.id) ? "" : " is-off"}` });
-    dot.append(svgEl("title", {}, `${v.name} (volunteer, ${duty.has(v.id) ? "on duty" : "off duty"})`));
-    nodes.push(dot);
-  }
-  for (const n of p.ngos) {
-    const [x, y] = at(n);
-    const box = svgEl("rect", { x: x - 7.5, y: y - 7.5, width: 15, height: 15, rx: 2, class: "m-ngo" });
-    box.append(svgEl("title", {}, `${n.name} (shelter)`));
-    nodes.push(box);
-  }
-  for (const k of p.kitchens) {
-    const [x, y] = at(k);
-    const dot = svgEl("circle", { cx: x, cy: y, r: 9, class: "m-kitchen" });
-    dot.append(svgEl("title", {}, `${k.name} (kitchen)`));
-    nodes.push(dot);
-  }
-  svg.replaceChildren(...nodes);
+  drawMap($("map"), p, { duty: new Set(state.onDuty), routes, linkable: true });
   $("map-routes").replaceChildren(...named.map(([tone, stops]) => {
     const key = svgEl("svg", { viewBox: "0 0 28 8", "aria-hidden": "true" });
     key.append(svgEl("line", { x1: 2, y1: 4, x2: 26, y2: 4, class: `m-route ${tone}` }));
@@ -495,29 +642,6 @@ function routeStops(c, p) {
     k ? { ...k, label: short(k.name) } : null,
     n ? { ...n, label: short(n.name) } : null,
   ].filter(Boolean);
-}
-
-// lat/lng -> SVG x/y: equirectangular, north up, MAP_W wide and as tall as the points need.
-function projector(points) {
-  const lat0 = points.reduce((s, p) => s + p.lat, 0) / points.length;
-  const k = Math.cos((lat0 * Math.PI) / 180);
-  const xs = points.map((p) => p.lng * k);
-  const ys = points.map((p) => -p.lat);
-  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const scale = (MAP_W - 2 * MAP_PAD) / (maxX - minX || 1);
-  const height = Math.round(Math.min((maxY - minY) * scale, 1.6 * MAP_W) + 2 * MAP_PAD);
-  const sy = (height - 2 * MAP_PAD) / (maxY - minY || 1);
-  const s = Math.min(scale, sy);
-  const offX = (MAP_W - (maxX - minX) * s) / 2;
-  const offY = (height - (maxY - minY) * s) / 2;
-  return { height, at: (p) => [round1(offX + (p.lng * k - minX) * s), round1(offY + (-p.lat - minY) * s)] };
-}
-
-function svgEl(tag, attrs, text) {
-  const node = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-  if (text != null) node.textContent = text;
-  return node;
 }
 
 // ---------------------------------------------------------------- sharing
@@ -557,10 +681,12 @@ async function shareCard() {
   try {
     const blob = await (await fetch(url)).blob();
     const file = new File([blob], name, { type: "image/png" });
-    if (!navigator.canShare({ files: [file] })) throw new Error("This browser can't share images; use Download.");
+    if (!navigator.canShare({ files: [file] })) throw new Error("no share");
     await navigator.share({ files: [file], title: "Bacha Hua Khana", text: `${card.kitchen} shared food today.` });
   } catch (err) {
-    if (err.name !== "AbortError") alert(err.message);
+    if (err.name === "AbortError") return;
+    $("s-error").textContent = "This browser can't share the image here. Use Download PNG instead, then post it.";
+    $("s-error").hidden = false;
   }
 }
 
@@ -580,10 +706,6 @@ function ms(v) {
 
 function num(n) {
   return Number.isInteger(Number(n)) ? String(Number(n)) : String(n);
-}
-
-function round1(n) {
-  return Math.round(n * 10) / 10;
 }
 
 const first = (name) => (name || "").split(" ")[0];

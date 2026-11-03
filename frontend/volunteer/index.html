@@ -30,9 +30,10 @@
       <p id="notice-text"></p>
     </div>
 
-    <!-- off duty -->
+    <!-- off duty: on a laptop the area map and today's numbers stand here too (app.js show) -->
     <section class="screen screen-off" id="screen-off">
       <h1 class="visually-hidden">Bacha Hua Khana: volunteer</h1>
+      <div class="off-side">
       <div class="me">
         <svg class="me-icon" aria-hidden="true"><use href="/assets/icons.svg#bike"/></svg>
         <div class="me-body">
@@ -47,26 +48,44 @@
       </div>
       <button class="btn btn-primary btn-huge btn-bilingual" id="duty" type="button"></button>
       <p class="text-muted" id="duty-hint"></p>
+      </div>
     </section>
 
     <!-- on duty: calm -->
     <section class="screen screen-on" id="screen-on" hidden>
+      <figure class="area-map">
+        <svg class="map-svg" id="area-map" role="img" aria-label="Map of your area"></svg>
+      </figure>
       <div class="calm">
-        <svg class="calm-icon" aria-hidden="true"><use href="/assets/icons.svg#bike"/></svg>
         <h1 id="on-title"></h1>
         <p id="on-body"></p>
       </div>
-      <dl class="today">
+      <dl class="today" id="today">
         <div><dt id="today-label"></dt><dd class="hero-number num" id="today-rescues">0</dd></div>
         <div><dt id="meals-label"></dt><dd class="hero-number num" id="today-meals">0</dd></div>
       </dl>
+      <section class="rescues" aria-labelledby="rescues-h">
+        <h2 id="rescues-h">Your rescues</h2>
+        <ol class="rescue-stack" id="rescue-list"></ol>
+        <div class="empty-state has-kolam" id="rescue-empty">
+          <svg class="kolam kolam--top-right" aria-hidden="true"><use href="/assets/illustrations.svg#kolam"/></svg>
+          <svg class="illus" viewBox="0 0 140 92" aria-hidden="true"><use href="/assets/illustrations.svg#scooter"/></svg>
+          <p id="rescue-empty-text">Your first pickup will show up here.</p>
+        </div>
+      </section>
       <button class="btn btn-secondary btn-bilingual" id="off-duty" type="button"></button>
     </section>
 
     <!-- incoming offer: full-screen haldi, like a call -->
-    <section class="screen screen-offer" id="screen-offer" hidden aria-live="assertive">
+    <!-- An offer arriving is announced here: revealing a hidden screen isn't reliably read out. -->
+    <p class="visually-hidden" id="offer-announce" aria-live="assertive"></p>
+
+    <section class="screen screen-offer" id="screen-offer" hidden>
       <div class="timeout" aria-hidden="true"><div id="timeout-bar"></div></div>
       <div class="caller">
+        <svg class="ring-lines" viewBox="0 0 260 260" aria-hidden="true">
+          <circle cx="130" cy="130" r="58"/><circle cx="130" cy="130" r="84"/><circle cx="130" cy="130" r="110"/>
+        </svg>
         <span class="caller-ring"><svg class="ringing" id="ring-icon" aria-hidden="true"><use href="/assets/icons.svg#phone"/></svg></span>
         <div>
           <p class="caller-title"><span id="offer-title"></span> · <span class="num" id="offer-secs"></span></p>
@@ -90,6 +109,7 @@
         <span class="speaking-bars" aria-hidden="true"><i></i><i></i><i></i></span><span id="listening-word"></span>
       </p>
       <div class="call-buttons">
+        <p class="call-note" id="call-note">Saying no is fine, we'll ask someone else.</p>
         <button class="btn btn-danger btn-huge btn-bilingual" id="no" type="button"></button>
         <button class="mic-btn call-mic" id="talk" type="button">
           <svg class="icon" aria-hidden="true"><use id="talk-icon" href="/assets/icons.svg#mic"/></svg>

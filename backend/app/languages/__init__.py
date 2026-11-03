@@ -5,6 +5,7 @@ collide, and kitchens code-switch), while prompts and voices come from the
 kitchen's own language. To add a language, write a module like ml.py and list
 it in LANGUAGES.
 """
+import re
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Callable, Optional
@@ -66,12 +67,15 @@ class Prompts:
     by_time: Callable[[datetime], str]  # "shaam 6 baje", "by 6 PM"
     area_names: dict[str, str] = field(default_factory=dict)  # canonical -> spoken
     units_singular: Optional[dict[str, str]] = None
-    dish_words: dict[str, str] = field(default_factory=dict)  # Latin dish word -> spoken
+    # dish word as heard -> as this language's read-back writes it (ml, kn: Latin -> own script;
+    # hi: Devanagari -> Roman, since the Hindi screen is Hinglish and hi_voice respells it)
+    dish_words: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class OfferPrompts:
-    """What a volunteer hears. alert: {quantity} {unit} {dish} {area} {distance} {deadline}."""
+    """What a volunteer hears. alert: {quantity} {unit} {dish} {area} {distance} {km} {deadline}.
+    {distance} is whole kilometres ("6", not "6.2", which voices read as "6 point 2")."""
     alert: str
     accepted: str
     declined: str
@@ -87,6 +91,8 @@ class OfferPrompts:
     food_safety: str
     veg_word: str
     non_veg_word: str
+    # {km}: the word after {distance}, (one, many), for languages that change it ("1 kilometre").
+    km: tuple[str, str] = ("", "")
 
 
 @dataclass(frozen=True)
@@ -156,6 +162,11 @@ class Language:
     need: NeedPrompts
     ask: AskPrompts
     safety: SafetyPrompts
+    # Shown under the mic, one at a time, as "for example:" (each one parses: see test_examples).
+    report_examples: tuple[str, ...] = ()
+    need_examples: tuple[str, ...] = ()
+    # Roman word -> how this voice should be given it (hi: Devanagari; see hi_voice.py).
+    voice_spellings: dict[str, str] = field(default_factory=dict)
 
 
 def clock_12h(dt: datetime) -> tuple[int, int]:
@@ -173,6 +184,28 @@ def script_of(text: str) -> str:
             if lo <= ch <= hi_:
                 return name
     return "latin"
+
+
+_ROMAN_WORD = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)*(?:-[A-Za-z]+)*")
+
+
+def screen_dish(dish: Optional[str], lang: Language) -> Optional[str]:
+    """A dish as this language's screen and read-back write it (Prompts.dish_words):
+    "वेज बिरयानी" -> "veg biryani" in Hindi, "pulao" -> "ಪುಲಾವ್" in Kannada."""
+    if not dish:
+        return dish
+    return " ".join(lang.prompts.dish_words.get(w.lower(), w) for w in dish.split())
+
+
+def for_voice(text: str, lang: Language) -> str:
+    """What the TTS voice is given: `text` with each Roman word this voice misreads swapped
+    for its spelling (Hindi: Devanagari). The screen keeps showing `text` itself."""
+    if not lang.voice_spellings:
+        return text
+    def swap(m: re.Match) -> str:
+        word = m.group()
+        return lang.voice_spellings.get(word.lower().replace("’", "'"), word)
+    return _ROMAN_WORD.sub(swap, text)
 
 
 def with_voice(lang: Language, voices: dict[str, str]) -> Language:

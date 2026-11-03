@@ -4,6 +4,7 @@ from datetime import datetime
 from . import (AskPrompts, Language, Lexicon, NeedPrompts, OfferPrompts, Prompts,
                SafetyPrompts, clock_12h)
 from .areas import STT_VARIANTS, AREAS_LATIN, DEVANAGARI_NAMES, aliases
+from .hi_voice import VOICE_SPELLINGS
 
 LEXICON = Lexicon(
     numbers={
@@ -116,6 +117,19 @@ def spoken_time(dt: datetime) -> str:
     return f"{_period(dt.hour)} {clock}"
 
 
+# Prisma's hi-IN writes dishes in Devanagari; the Hindi screen is Roman Hinglish, so the read-back
+# writes them in Roman ("वेज बिरयानी" -> "veg biryani"). for_voice turns them back for the voice.
+SCREEN_DISH = {
+    "वेज": "veg", "नॉनवेज": "non-veg", "बिरयानी": "biryani", "बिरियानी": "biryani", "पुलाव": "pulao",
+    "पुलाओ": "pulao", "चपाती": "chapati", "रोटी": "roti", "दाल": "dal", "चावल": "chawal",
+    "सब्ज़ी": "sabzi", "सब्जी": "sabzi", "छोले": "chhole", "राजमा": "rajma", "खिचड़ी": "khichdi",
+    "पराठा": "paratha", "पूरी": "puri", "पोहा": "poha", "उपमा": "upma", "खीर": "kheer",
+    "हलवा": "halwa", "पनीर": "paneer", "आलू": "aloo", "अंडा": "anda", "करी": "curry", "इडली": "idli",
+    "सांभर": "sambar", "सांबर": "sambar", "डोसा": "dosa", "चना": "chana", "मटर": "matar",
+    "गोभी": "gobi", "मसाला": "masala", "जीरा": "jeera", "दही": "dahi", "रसम": "rasam",
+    "चिकन": "chicken", "मटन": "mutton", "फ्राइड": "fried", "राइस": "rice",
+}
+
 PROMPTS = Prompts(
     confirm="{quantity} {unit} {dish}, {cooked} bana tha{location}. "
             "{veg}Pickup {deadline} tak hona chahiye. Sahi hai?",
@@ -139,6 +153,7 @@ PROMPTS = Prompts(
     repeat_hint="kal jaisa",
     at_time=spoken_time,
     by_time=spoken_time,
+    dish_words=SCREEN_DISH,
 )
 
 OFFER = OfferPrompts(
@@ -205,7 +220,10 @@ SAFETY = SafetyPrompts(
 LANGUAGE = Language(
     code="hi-IN", name="Hindi", native_name="हिन्दी", stt_code="hi-IN",
     tts_language="hi-IN", tts_voice="Nalini", lexicon=LEXICON, prompts=PROMPTS,
+    voice_spellings=VOICE_SPELLINGS,  # the voice reads Devanagari far better than Roman
     offer=OFFER, scripts=frozenset({"latin", "devanagari"}),
+    report_examples=('Pachaas plate biryani bachi hai, do baje bani thi', 'Das kilo pulao bacha hai, ek baje bana tha', 'Tees plate chapati sabzi bachi hai, dopahar teen baje bani'),
+    need_examples=('Chalees logon ke liye raat 9 baje tak khana chahiye', 'Pachaas bachchon ke liye sirf veg khana, shaam saat baje tak'),
     mock_report="pachaas plate veg biryani hai, do baje bana tha, Kakkanad se",
     mock_reply="haan sahi hai",
     need=NEED,

@@ -177,7 +177,7 @@ def test_no_card_for_unfinished_reports(client, status):
 def test_demo_reset_clears_cards(client):
     get_card(client, add_report(ReportStatus.PICKED_UP))
     assert any(cards.settings.cards_dir.glob("*.png"))
-    client.post("/admin/seed?confirm=true")
+    client.post("/admin/seed?confirm=true&history=false")
     assert not any(cards.settings.cards_dir.glob("*.png"))
     close_needs()  # the reset opens the demo need; leave nothing open for other tests
 

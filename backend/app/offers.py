@@ -28,7 +28,7 @@ from .config import now_local, settings
 from .confirm import fmt_quantity, has_no, has_yes
 from .db import engine as default_db
 from .db import log_event
-from .languages import Language, get_language, script_of
+from .languages import Language, for_voice, get_language, screen_dish, script_of
 from .matcher import Candidate, NeedMatch, rank_needs, rank_volunteers
 from .models import Event, Kitchen, Need, NeedStatus, Ngo, Offer, Report, ReportStatus, Volunteer
 from .needs import open_needs, refresh_needs
@@ -100,14 +100,22 @@ def classify_answer(text: str) -> Optional[bool]:
     return None
 
 
+def spoken_km(distance_km: float) -> int:
+    """Whole kilometres for the voice, at least 1: "6.2" is read aloud as "6 point 2"."""
+    return max(1, int(distance_km + 0.5))  # 2.5 -> 3 (round() would say 2)
+
+
 def alert_text(job: Job, distance_km: float, lang: Language) -> str:
     """The spoken offer. A dish or NGO name written in a script this voice can't read
     becomes "food" / "the shelter". `distance_km` is the whole route."""
     p = lang.prompts
-    dish = job.dish if script_of(job.dish) in lang.scripts else lang.offer.food_word
+    dish = screen_dish(job.dish, lang)  # as the read-back writes it
+    dish = dish if script_of(dish) in lang.scripts else lang.offer.food_word
     units = p.units_singular if p.units_singular and job.quantity == 1 else p.units
+    km = spoken_km(distance_km)
     fields = dict(quantity=fmt_quantity(job.quantity), unit=units[job.unit], dish=dish,
-                  area=p.area_names.get(job.area, job.area), distance=f"{distance_km:.1f}",
+                  area=p.area_names.get(job.area, job.area), distance=str(km),
+                  km=lang.offer.km[0 if km == 1 else 1],
                   deadline=p.by_time(job.deadline), safety=food_safety_text(job, lang))
     if not job.ngo_name:
         return lang.offer.alert.format(**fields)
@@ -322,7 +330,7 @@ class OfferEngine:
             "type": "offer", "offer_id": offer_id, "report_id": job.report_id,
             "language": lang.code, "text": text, "audio_url": audio_url,
             "timeout_s": self.timeout,
-            "summary": {"dish": job.dish, "quantity": job.quantity, "unit": job.unit,
+            "summary": {"dish": screen_dish(job.dish, lang), "quantity": job.quantity, "unit": job.unit,
                         "kitchen": job.kitchen_name, "area": job.area,
                         "distance_km": round(cand.distance_km, 1),
                         "eta_min": round(cand.eta_minutes),
@@ -508,7 +516,8 @@ class OfferEngine:
         """Speak in the volunteer's voice; on failure the offer still goes out as text."""
         start = time.perf_counter()
         try:
-            path = await asyncio.to_thread(self.speak, text, lang.tts_voice, lang.tts_language)
+            path = await asyncio.to_thread(self.speak, for_voice(text, lang), lang.tts_voice,
+                                           lang.tts_language)
         except Exception:
             log.exception("TTS failed for volunteer alert")
             return None

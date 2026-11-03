@@ -47,7 +47,16 @@
 .heard .icon { margin-top: .2em; color: var(--ink); }
 .heard-word { transition: opacity .25s var(--ease-out); }
 .heard-word.is-waiting { opacity: 0; }
-.hero-slip { width: 100%; max-width: 24rem; }
+/* The one bold image in the product: the self-writing slip on a banana leaf, a tiffin beside it. */
+main { overflow-x: clip; }  /* the leaf may reach past the phone's edges; never a sideways scroll */
+/* The leaf stands upright inside the stage's own box (never over the quote or the caption); the
+   slip lies on it, turned slightly; the tiffin sits on the leaf below the slip. */
+.hero-stage { position: relative; isolation: isolate; width: 100%; max-width: 24rem;
+              padding: var(--space-6) var(--space-4) var(--space-8); }
+.hero-leaf { position: absolute; z-index: -1; inset: 0 -30%; width: 160%; height: 100%; transform: rotate(4deg); }
+.hero-slip { position: relative; width: 100%; transform: rotate(-2.5deg); }
+.hero-tiffin { position: absolute; right: var(--space-2); bottom: -.5rem; width: 3.5rem; height: auto; }
+@media (max-width: 899.98px) { .hero > .kolam { display: none; } }  /* it would sit behind text */
 .hero-cap { color: var(--steel-dark); font-size: var(--text-small); }
 
 /* ------------------------------------------------------------------ bands */
@@ -155,4 +164,92 @@
 }
 @media (max-width: 599.98px) {
   .phone { justify-self: center; }
+}
+
+/* ------------------------------------------------------------------ laptop: one screen */
+/* The page is exactly one screen. The top bar's tabs switch what fills it (home.js): first the
+   hero (headline, live count, buttons, the four apps) with the slip on its leaf beside it; then
+   "How it works", "Built on Gnani AI" and "About", each laid out to fit on its own. */
+@media (min-width: 1000px) and (min-height: 600px) {
+  body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+  .bar, .foot { flex: none; }
+  .bar { flex-wrap: nowrap; padding-block: 0; }
+  .bar-brand { padding-block: var(--space-3); }
+  .bar-links { display: none; }  /* the tabs take their place */
+  .foot { padding-block: var(--space-2); }
+  main {
+    flex: 1; min-height: 0; display: grid; width: min(84rem, 100% - 2 * var(--space-6)); margin-inline: auto;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: "title demo" "copy demo" "open demo";
+    gap: var(--space-3) var(--space-7); padding-block: var(--space-4);
+  }
+  main > section, main > .band { padding: 0; border: 0; background: none; }
+  main .wrap { width: 100%; }
+  main h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);
+            white-space: nowrap; }  /* the tab names the screen */
+
+  /* the tabs, in the top bar */
+  .tablist { display: flex; align-self: stretch; gap: var(--space-1); }
+  .tab {
+    padding: 0 var(--space-4); border: 0; border-bottom: 3px solid transparent; background: none;
+    color: var(--steel-dark); font: inherit; font-family: var(--font-display); font-size: var(--step-0);
+    font-weight: 600; cursor: pointer;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { border-bottom-color: var(--leaf); color: var(--ink); }
+  [role="tabpanel"]:focus-visible { outline-offset: 4px; }
+
+  /* Home: the hero, and the four apps under its buttons */
+  .hero { display: contents; }
+  .hero > .kolam { display: none; }
+  .hero h1 { font-size: clamp(var(--step-3), min(4.4vw, 6.4dvh), var(--step-hero)); max-width: 20ch; }
+  .hero-title { align-self: end; }
+  .lede { margin-top: var(--space-2); font-size: var(--step-0); }
+  .count { min-height: 0; margin-top: var(--space-2); }
+  .count-n { font-size: clamp(var(--step-3), 8dvh, var(--step-hero)); }
+  .hero-actions { margin-top: var(--space-3); }
+  .hero-demo { align-self: safe center; min-height: 0; }  /* never up over the top bar */
+  .hero-stage { max-width: min(24rem, 38dvh); }
+  #open { grid-area: open; align-self: start; }
+  .apps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-3); }
+  .app { padding: var(--space-2) var(--space-3); }
+  .app-name { font-size: var(--step-1); }
+  .app-who { font-size: var(--text-small); line-height: 1.4; }
+
+  /* the other tabs: one screen each */
+  #how, #gnani, #about { grid-area: 1 / 1 / -1 / -1; align-self: center; min-height: 0; max-height: 100%;
+                         overflow-y: auto; scrollbar-width: thin; }  /* a scroll only as a last resort */
+  .steps { gap: var(--space-6); }
+  .step { justify-items: center; text-align: center; }
+  .step h3 { justify-content: center; }
+  .step p { max-width: 24rem; font-size: var(--text-small); }
+  .phone { height: clamp(12rem, 100dvh - 22rem, 21rem); }
+  /* Gnani: the accuracy table beside the two engines and the languages */
+  #gnani .wrap { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start;
+                 gap: var(--space-6); }
+  #gnani .eval { grid-column: 1; grid-row: 1; margin-top: 0; }
+  #gnani .engines { grid-column: 2; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+  .eval-head { font-size: var(--step-0); }
+  .eval-table { min-width: 0; }
+  .eval-table th, .eval-table td { padding: 4px var(--space-2); }
+  .engine { padding: var(--space-3); }
+  .engine p { font-size: var(--text-small); }
+  .langs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #gnani .note { max-width: none; }
+  #about .honest { max-width: 44rem; margin-inline: auto; }
+}
+/* A short laptop window (a 1366x768 screen, or 125% scaling): the slip's stage tightens and the
+   four apps stand in one row. */
+@media (min-width: 1000px) and (min-height: 600px) and (max-height: 799.98px) {
+  .heard { min-height: 0; font-size: var(--step-0); }
+  .hero h1 { font-size: clamp(var(--step-3), min(4.4vw, 5.6dvh), var(--step-hero)); }
+  .hero-stage { padding-block: var(--space-4) var(--space-6); }
+  .hero-cap { display: none; }  /* the slip's own status says it */
+  .apps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .app-icon { grid-row: auto; }
+  .app-name { font-size: var(--step-0); }
+  .eval-table caption { padding-block: 2px; }
+  .eval-table th, .eval-table td { padding-block: 2px; }
 }

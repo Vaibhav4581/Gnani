@@ -50,10 +50,14 @@ body { min-width: 0; }
 .main {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "col" "below";
   gap: var(--space-5);
   padding: 0 var(--space-5) var(--space-7);
+  container-type: inline-size;
 }
-.col { display: grid; gap: var(--space-5); min-width: 0; container-type: inline-size; }
+.col { grid-area: col; display: grid; gap: var(--space-5); min-width: 0; }
+.below { grid-area: below; }
+.detail { grid-area: detail; }
 
 /* ------------------------------------------------------------------ route board */
 .board {
@@ -61,11 +65,38 @@ body { min-width: 0; }
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
 }
-.lane { display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); min-width: 0; }
+.lane { display: grid; align-content: start; gap: var(--space-3); min-width: 0; }
+
+/* "What am I looking at?": a one-line note under each shelf and over the impact strip. */
+.explain { flex-basis: 100%; max-width: none; margin: 0; padding: var(--space-2) var(--space-3);
+           border-left: 4px solid var(--haldi); border-radius: var(--radius-slip); background: var(--haldi-soft);
+           font-size: var(--text-small); line-height: 1.4; }
+.explain-btn { border: 2px solid var(--ink); color: var(--ink); font-weight: 600; }
+.explain-btn:hover { border-color: var(--leaf); color: var(--leaf); }
+.explain-btn[aria-pressed="true"] { border-color: var(--leaf); background: var(--leaf); color: var(--paper); }
+.dash-problem { margin: var(--space-3) var(--space-5) 0; }
+
+/* Map and board point at each other: a dot's slips are outlined, the rest step back. */
+.slip-item { transition: opacity .2s; }
+.board.is-linking .slip-item:not(.is-related) { opacity: .45; }
+.slip-item.is-related .kot-paper { box-shadow: inset 0 0 0 3px var(--leaf); }
+.m-dot { cursor: pointer; transform-box: fill-box; transform-origin: center; transition: transform .15s; }
+.m-dot.is-related { transform: scale(1.45); stroke: var(--ink); stroke-width: 2.5; }
+.m-dot:focus-visible { outline: var(--focus-ring); outline-offset: 3px; }
+
+.detail-skeleton .kot { max-width: none; }
+.detail.is-loading-detail .detail-sec, .detail.is-loading-detail .detail-status,
+.detail.is-loading-detail .detail-actions { display: none; }
+/* Lane headings are a steel pass shelf: a counter strip with an edge lip; the lane's colour is
+   the thin line along its top. Slips sit below on the kolam dots. */
 .lane-h {
+  position: relative;
   display: flex; align-items: center; gap: var(--space-2);
-  padding-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-top: 4px solid var(--steel);
+  border-bottom: 3px solid var(--counter-edge);
+  border-radius: var(--radius-slip) var(--radius-slip) 0 0;
+  background: var(--counter);
   font-size: var(--step-1);
 }
 .lane[data-lane="reported"] .lane-h { border-top-color: var(--haldi); }
@@ -74,8 +105,8 @@ body { min-width: 0; }
 .lane[data-lane="delivered"] .lane-h { border-top-color: var(--leaf); border-top-style: double; border-top-width: 6px; }
 /* the arrow of travel between lane headings */
 .lane + .lane .lane-h::before {
-  content: "→"; margin-left: calc(-1 * var(--space-4) + 2px); margin-right: 2px;
-  color: var(--steel-dark); font-family: var(--font-body); font-weight: 400;
+  content: "→"; position: absolute; left: calc(-1 * var(--space-4)); width: var(--space-4);
+  color: var(--steel-dark); font-family: var(--font-body); font-weight: 400; text-align: center;
 }
 .lane-n {
   min-width: 1.6em; padding: 0 6px; border-radius: 999px;
@@ -86,11 +117,14 @@ body { min-width: 0; }
   display: grid; align-content: start; gap: var(--space-4);
   min-height: 14rem; margin: 0; padding: 0; list-style: none;
 }
-.lane-empty {
-  display: grid; place-items: center; min-height: 6rem;
-  border: 2px dashed var(--steel); border-radius: var(--radius-slip);
-  color: var(--steel-dark); font-size: var(--text-small);
-}
+/* An empty lane: the dashed outline of a slip (torn edge and all), saying what lands here. */
+.lane-empty { position: relative; display: grid; place-items: center; min-height: 7.5rem;
+              padding: var(--space-4) var(--space-4) var(--space-5); color: var(--steel-dark);
+              font-size: var(--text-small); text-align: center; }
+.lane-empty svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.lane-empty path { fill: var(--rice); stroke: var(--steel-dark); stroke-width: 1.5; stroke-dasharray: 5 5;
+                   opacity: .7; vector-effect: non-scaling-stroke; }
+.lane-empty p { position: relative; }
 .slip-item { min-width: 0; }
 
 /* The compact KOT: same ticket, smaller type, a few extra lines. */
@@ -135,7 +169,7 @@ body { min-width: 0; }
 .closed-list { grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 0; padding-bottom: var(--space-4); }
 
 /* ------------------------------------------------------------------ panels under the board */
-.below { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+.below { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); min-width: 0;
          grid-template-areas: "left map"; align-items: start; }
 .below-left { grid-area: left; display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
 @container (min-width: 1100px) {
@@ -175,27 +209,12 @@ body { min-width: 0; }
 .need-row.is-empty { display: block; color: var(--steel-dark); }
 
 /* ------------------------------------------------------------------ map */
-.map-svg { display: block; width: 100%; height: auto; max-height: 400px;
-           background: var(--rice); border-radius: var(--radius-slip); }
-.m-area { fill: var(--paper); stroke: var(--steel); stroke-width: 1; }
-.m-area-label { fill: var(--steel-dark); font-family: var(--font-body); font-size: 15px; font-weight: 600; }
-.m-kitchen { fill: var(--haldi); stroke: var(--ink); stroke-width: 1.5; }
-.m-vol { fill: var(--leaf); stroke: var(--paper); stroke-width: 1.5; }
-.m-vol.is-off { fill: var(--paper); stroke: var(--leaf); stroke-width: 1.5; }
-.m-ngo { fill: var(--steel-dark); stroke: var(--paper); stroke-width: 1.5; }
-.m-route { fill: none; stroke: var(--steel-dark); stroke-width: 1.5; stroke-dasharray: 4 4;
-           stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
-.m-route.is-active { stroke: var(--leaf); stroke-width: 3.5; stroke-dasharray: none; opacity: 1; }
-.m-route.is-asking { stroke: var(--leaf); stroke-width: 2.5; stroke-dasharray: 6 5; opacity: 1; }
-/* A route's stops, named under the map: the line style says which route it is. */
+/* map dots, water and routes: design.css (maps) */
+.map .map-svg { max-height: 400px; }
 .map-routes { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font-size: var(--text-small); }
 .map-routes:empty { display: none; }
 .map-routes li { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: var(--space-2); }
 .map-routes svg { width: 28px; height: 8px; }
-.map-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0;
-           list-style: none; font-size: var(--text-small); }
-.map-key li { display: inline-flex; align-items: center; gap: 6px; }
-.map-key svg { width: 14px; height: 14px; }
 
 /* ------------------------------------------------------------------ detail panel */
 .detail {
@@ -281,8 +300,64 @@ body { min-width: 0; }
 /* ------------------------------------------------------------------ widths */
 /* Wide: the detail panel sits beside the board and the lanes make room. */
 @media (min-width: 1200px) {
-  .main.has-detail { grid-template-columns: minmax(0, 1fr) 26rem; }
+  .main.has-detail { grid-template-columns: minmax(0, 1fr) 26rem; grid-template-areas: "col detail" "below detail"; }
   .detail { position: sticky; top: var(--space-4); max-height: calc(100dvh - 2 * var(--space-4)); }
+}
+/* A laptop or bigger: the whole board fits one screen, nothing to scroll. A full lane folds its
+   oldest slips and then shows "+N more" (app.js fitLanes); the map, needs and voice timings
+   stand in a side column the full height of the page, beside the impact strip and the board,
+   which a slip's timeline takes over while it is open. */
+@media (min-width: 1200px) and (min-height: 600px) {
+  body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+  #content { display: grid; flex: 1; min-height: 0; column-gap: var(--space-5);
+             grid-template-columns: minmax(0, 1fr) clamp(20rem, 24vw, 26rem);
+             grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "strip side" "col side";
+             padding: 0 var(--space-5) var(--space-4); }
+  .top { flex: none; padding-block: var(--space-3); }
+  .strip { grid-area: strip; gap: var(--space-2) var(--space-6); padding: var(--space-3) 0; }
+  .strip-big { font-size: clamp(2.75rem, 7vh, 4.5rem); }
+  .strip-num { font-size: var(--step-3); }
+  .strip-note { flex-basis: auto; min-height: 0; align-self: flex-end; }
+  .main, .main.has-detail { display: contents; }  /* its columns join the page's grid */
+  .main.has-detail .below { display: none; }
+  .col { grid-area: col; grid-template-rows: minmax(0, 1fr); align-content: stretch; min-height: 0; }
+  .col:has(.closed:not([hidden])) { grid-template-rows: minmax(0, 1fr) auto; }
+  .board { min-height: 0; }
+  .lane { grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; }
+  .lane-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+               padding: 4px 4px var(--space-3); margin-inline: -4px; }  /* room for focus rings */
+  .closed-list { max-height: 30vh; overflow-y: auto; }
+  /* a slip folded to its heading when the lane is full (app.js fitLanes) */
+  .slip-item.is-folded .kot-paper > :not(.kot-head) { display: none; }
+  .slip-item.is-folded .kot-head { padding-bottom: 0; border-bottom: 0; }
+  .slip-item.is-folded .kot-kitchen { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lane-list:not(.is-open) { overflow-y: hidden; }
+  .lane-more .quiet-btn { width: 100%; border-style: dashed; color: var(--ink); font-weight: 600; }
+  .below, .below .below-left { display: flex; flex-direction: column; gap: var(--space-3); }
+  .below { grid-area: side; align-items: stretch; min-height: 0; margin-top: var(--space-3); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .below .map, .below .needs { order: -1; }  /* map, then needs, then timings */
+  .below .panel { flex: none; gap: var(--space-2); padding: var(--space-3); }
+  .map .map-svg { max-height: 36vh; }
+  .map-key { font-size: var(--text-small); }
+  /* a need's status under its name: the side column is narrow */
+  .below .need-row { grid-template-columns: minmax(0, 1fr); }
+  .below .need-row .pill { grid-row: auto; grid-column: 1; justify-self: start; }
+  /* the timings in one row of three */
+  .pipe { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .pipe > div { grid-template-columns: 1fr; gap: 2px; padding: 0; }
+  .pipe > div + div { border-top: 0; border-left: 1px dashed var(--steel); padding-left: var(--space-2); }
+  .pipe dt { font-size: var(--text-small); }
+  .pipe dd { text-align: left; }
+  .pipe-ms { font-size: var(--step-1); }
+  .detail { grid-area: side; position: static; max-height: none; min-height: 0; margin-top: var(--space-3); }
+}
+/* A short laptop window: the route list under the map goes (each slip names its route), and the
+   map's note is left to screen readers (the map is labelled by it). */
+@media (min-width: 1200px) and (min-height: 600px) and (max-height: 799.98px) {
+  .map-routes { display: none; }
+  .below, .below .below-left { gap: var(--space-2); }
+  .below .panel { padding-block: var(--space-2); }
+  #map-cap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 /* Narrower: the panel slides over the board from the right. */
 @media (max-width: 1199.98px) {

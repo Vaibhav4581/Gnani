@@ -3,9 +3,10 @@
 // haldi, the ticket, ride and drop-off, the spoken alert, and call-style Nahi / Haan buttons (voice
 // works too) -> accepted: pick up and drop off as two stops -> picked up -> delivered (the NGO is
 // then asked to confirm) -> back on duty.
-import { $, getJson, liveSocket, postJson, store, stored } from "/shared/common.js";
+import { $, failureKey, getJson, liveSocket, postJson, store, stored } from "/shared/common.js";
 import { Microphone, bindHoldToTalk, extensionFor } from "/shared/recorder.js";
-import { clock, renderKot, setKotStatus } from "/assets/kot.js";
+import { clock, renderKot, renderMiniKot, renderSkeletonMini, setKotStatus } from "/assets/kot.js";
+import { drawMap } from "/assets/map.js";
 import { STRINGS, fill, strings } from "./strings.js";
 
 const ICONS = "/assets/icons.svg";
@@ -65,8 +66,8 @@ async function init() {
 async function loadVolunteers() {
   try {
     state.volunteers = await getJson("/volunteers");
-  } catch {
-    return notice(state.t.notice.noNetwork, "error");
+  } catch (err) {
+    return problem(err);
   }
   const chosen = state.volunteers.find((v) => String(v.id) === stored(VOLUNTEER_KEY));
   useVolunteer(chosen || state.volunteers[0]);
@@ -81,6 +82,7 @@ function useVolunteer(v) {
   $("mock-text").placeholder = v.sample_yes;
   applyStrings();
   show("off");
+  loadToday();  // the map and today's numbers show off duty too, on a laptop
 }
 
 function openSheet() {
@@ -109,13 +111,17 @@ function applyStrings() {
   $("me-unavailable-text").textContent = t.duty.unavailable;
   bilingual($("duty"), "duty.start");
   $("duty-hint").textContent = t.duty.hint;
-  $("on-title").textContent = t.duty.onTitle;
+  $("on-title").textContent = fill(t.duty.onTitle, { area: me.area });
+  $("area-map").setAttribute("aria-label", t.map.label);
+  $("rescues-h").textContent = t.rescues.title;
+  $("rescue-empty-text").textContent = t.rescues.empty;
   $("on-body").textContent = t.duty.onBody;
   $("today-label").textContent = t.duty.today;
   $("meals-label").textContent = t.duty.meals;
   bilingual($("off-duty"), "duty.stop");
   $("offer-title").textContent = t.offer.title;
   bilingual($("yes"), "offer.yes");
+  $("call-note").textContent = t.noFine;
   bilingual($("no"), "offer.no");
   $("talk-label").textContent = t.offer.hold;
   $("talk").setAttribute("aria-label", t.offer.hold);
@@ -143,9 +149,18 @@ function bilingual(btn, path) {
   }
 }
 
-// One screen at a time: off | on | offer | accepted. The page colour follows it.
+// One screen at a time: off | on | offer | accepted. The page colour follows it. The area map
+// and today's numbers belong to whichever of off and on is showing.
 function show(screen) {
   document.body.dataset.screen = screen;
+  const map = $("area-map").parentElement;
+  if (screen === "on") {
+    $("screen-on").prepend(map);
+    $("on-title").parentElement.after($("today"));
+  } else if (screen === "off") {
+    $("screen-off").prepend(map);
+    $("duty-hint").after($("today"));
+  }
   for (const name of ["off", "on", "offer", "accepted"]) $(`screen-${name}`).hidden = name !== screen;
   if (screen === "offer" || screen === "accepted") window.scrollTo(0, 0);
 }
@@ -182,11 +197,47 @@ function goOffDuty() {
 }
 
 async function loadToday() {
+  drawAreaMap();
+  if (!$("rescue-list").children.length) {  // loading: a blank ticket breathing, not the empty state
+    $("rescue-empty").hidden = true;
+    $("rescue-list").setAttribute("aria-busy", "true");
+    const li = el("li");
+    li.append(renderSkeletonMini());
+    $("rescue-list").replaceChildren(li);
+  }
   try {
     const today = await getJson(`/volunteers/${state.me.id}/today`);
     $("today-rescues").textContent = today.rescues;
     $("today-meals").textContent = today.meals;
-  } catch { /* the numbers are a nicety */ }
+    drawRescues(today.recent || []);
+  } catch {  // the numbers are a nicety
+    drawRescues([]);
+  }
+}
+
+// The volunteer's own area: kitchens, shelters and other volunteers within 4 km, "you" pulsing.
+async function drawAreaMap() {
+  const me = state.me;
+  try {
+    state.places ||= await getJson("/map");
+  } catch { return; }
+  const self = state.places.volunteers.find((v) => v.id === me.id);
+  if (!self || state.me !== me) return;
+  drawMap($("area-map"), state.places, { focus: { lat: self.lat, lng: self.lng, km: 4 }, you: me.id,
+                                         youLabel: state.t.map.you, width: 360, pad: 46 });
+}
+
+// "Your rescues": the last three as small tickets, or the scooter and a line when there are none.
+function drawRescues(recent) {
+  const t = state.t;
+  $("rescue-list").removeAttribute("aria-busy");
+  $("rescue-empty").hidden = recent.length > 0;
+  $("rescue-list").replaceChildren(...recent.map((r) => {
+    const li = el("li");
+    li.append(renderMiniKot(r, { words: t.kot,
+                                 word: r.status === "DELIVERED" ? t.rescues.done : t.rescues.picked }));
+    return li;
+  }));
 }
 
 // Back to the calm screen, with a short message that clears itself.
@@ -202,6 +253,7 @@ function backToDuty(text, kind = "attention") {
 async function onMessage(msg) {
   if (msg.type === "offer") {
     showOffer(msg);
+    navigator.vibrate?.([400, 200, 400, 200, 400]);  // like a phone ringing, for a phone in a pocket
     await ring();
     play(msg.audio_url);
   } else if (msg.type === "reset") {  // demo data was reset from the dashboard
@@ -235,6 +287,11 @@ function showOffer(msg) {
     $("offer-drop-label").textContent = t.offer.dropAt;
     $("offer-drop").textContent = `${s.ngo.name} · ${fill(t.offer.people, { n: s.ngo.people })}`;
   }
+  const [one, many] = (t.kot.units || {})[s.unit] || [s.unit, s.unit];
+  $("offer-announce").textContent = fill(t.announce, {
+    kitchen: s.kitchen, km: s.distance_km,
+    food: [s.quantity != null ? `${s.quantity} ${s.quantity === 1 ? one : many}` : null, s.dish]
+      .filter(Boolean).join(" ") });
   $("offer-said").textContent = msg.text;
   $("offer-said").lang = (msg.language || state.me.language).split("-")[0];
   setAnswering(true);
@@ -303,7 +360,7 @@ async function send(url, options) {
       backToDuty(err.body.taken_by ? fill(t.taken, { v: err.body.taken_by })
         : err.body.status === "WITHDRAWN" ? t.cancelled : t.declined);
     } else {
-      notice(fill(state.t.notice.server, { what: err.message }), "error");
+      problem(err);
       setAnswering(true);
     }
   } finally {
@@ -372,10 +429,15 @@ async function markPickedUp() {
       backToDuty(state.t.accepted.pickedThanks, "success");
     }
   } catch (err) {
-    notice(fill(state.t.notice.server, { what: err.message }), "error");
+    problem(err);
   } finally {
     $("picked").disabled = false;
   }
+}
+
+// Every failure says what to do next (common.js failureKey).
+function problem(err) {
+  notice(fill(state.t.notice[failureKey(err)], { what: err?.message }), "error");
 }
 
 // The NGO page then asks "Khana aa gaya?" and the NGO's answer marks it delivered.
@@ -387,7 +449,7 @@ async function markDelivered() {
     await postJson(`/reports/${job.reportId}/delivered?by=volunteer`);
     backToDuty(fill(state.t.accepted.deliveredThanks, { ngo: job.s.ngo.name }), "success");
   } catch (err) {
-    notice(fill(state.t.notice.server, { what: err.message }), "error");
+    problem(err);
   } finally {
     $("delivered").disabled = false;
   }

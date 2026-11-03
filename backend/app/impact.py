@@ -87,9 +87,9 @@ def summarize(items: Iterable[Rescue]) -> dict:
     }
 
 
-def impact(s: Session, now: datetime) -> dict:
-    """Today (by completion date, local time) and all time."""
-    items = rescues(s)
+def impact(s: Session, now: datetime, kitchen_id: Optional[int] = None) -> dict:
+    """Today (by completion date, local time) and all time; one kitchen's only, if given."""
+    items = [r for r in rescues(s) if kitchen_id is None or r.report.kitchen_id == kitchen_id]
     return {
         "today": summarize(r for r in items if r.completed_at.date() == now.date()),
         "all_time": summarize(items),

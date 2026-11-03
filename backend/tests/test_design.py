@@ -47,7 +47,8 @@ FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 @pytest.mark.parametrize("path", PAGES)
 def test_every_page_has_one_h1_a_main_landmark_and_an_icon(client, path):
     html = client.get(path).text
-    assert len(re.findall(r"<h1[\s>]", html)) == 1 or path == "/volunteer/", path  # one per screen there
+    # one per screen on the volunteer page and the home page's laptop tabs
+    assert len(re.findall(r"<h1[\s>]", html)) == 1 or path in ("/volunteer/", "/"), path
     assert "<h1" in html and "<main" in html and 'href="/assets/favicon.svg"' in html
 
 
@@ -94,3 +95,55 @@ def test_styleguide_is_not_linked_from_any_page(client):
     for path in PAGES:
         assert "styleguide" not in client.get(path).text, path
     assert client.get("/styleguide.html").status_code == 200  # still there for review
+
+
+# ---------------------------------------------------------------- the setting (UI v2)
+
+def test_illustration_sprite_has_every_drawing(client):
+    svg = client.get("/assets/illustrations.svg").text
+    for name in ["banana-leaf", "banana-leaf-tall", "tiffin", "scooter", "shelter", "thali", "kolam"]:
+        assert f'id="{name}"' in svg, name
+    assert "var(--leaf" in svg  # colours come from the design tokens
+
+
+def test_setting_tokens_are_defined(client):
+    css = client.get("/assets/design.css").text
+    for token in ["--counter:", "--counter-edge:", "--rail:", "--water:", "--leaf-deep:", "--leaf-hover:",
+                  "--mirchi-hover:", "--kolam-dot:"]:
+        assert token in css, token
+
+
+def test_illustrations_only_in_the_hero_and_empty_states():
+    """DESIGN.md: illustrations appear in the home hero, empty states and "no rescues yet" only."""
+    for page in ["kitchen", "volunteer", "ngo", "dashboard"]:
+        html = (FRONTEND / page / "index.html").read_text(encoding="utf-8")
+        for match in re.finditer(r"illustrations\.svg#", html):
+            i = match.start()  # inside an empty state: its opening tag comes after the last </div>
+            assert html.rfind('class="empty-state', 0, i) > html.rfind("</div>", 0, i), page
+
+
+# ---------------------------------------------------------------- friendlier (UI v2, prompt B)
+
+NEW_STRINGS = {
+    "kitchen": ["example:", "today:", "tips:", "bigger:", "unreachable:", "serverDown:", "rail:"],
+    "volunteer": ["noFine:", "announce:", "unreachable:", "serverDown:", "rescues:", "map:"],
+    "ngo": ["example:", "unreachable:", "serverDown:"],
+}
+
+
+@pytest.mark.parametrize("page", sorted(NEW_STRINGS))
+def test_new_strings_exist_in_every_language(page):
+    text = (FRONTEND / page / "strings.js").read_text(encoding="utf-8")
+    blocks = re.split(r'\n  "(?:hi|ml|en|kn)-IN": \{', text)[1:]
+    assert len(blocks) == 4, page
+    for block, lang in zip(blocks, ["hi", "ml", "en", "kn"]):
+        for key in NEW_STRINGS[page]:
+            assert key in block, f"{page} {lang} is missing {key}"
+
+
+def test_no_alert_boxes_or_raw_error_text_left():
+    """Errors say what to do next, on the page: no alert(), and every screen knows "unreachable"."""
+    for page in ["kitchen", "volunteer", "ngo", "dashboard"]:
+        js = (FRONTEND / page / "app.js").read_text(encoding="utf-8")
+        assert "alert(" not in js, page
+        assert "failureKey" in js, page

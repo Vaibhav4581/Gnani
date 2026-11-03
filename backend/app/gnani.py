@@ -41,6 +41,26 @@ def _headers() -> dict:
     return {"X-API-Key-ID": key}
 
 
+# A brief Gnani hiccup (seen live, 3 Nov: two 502s on clips that went through fine a moment
+# later) is retried once, so one blip doesn't fail a kitchen's or volunteer's turn.
+RETRY_STATUS = {429, 500, 502, 503, 504}
+RETRY_WAIT_S = 0.5
+
+
+def _post(url: str, **kwargs) -> httpx.Response:
+    """httpx.post, tried once more after a short wait on a 5xx, 429 or dropped connection."""
+    for attempt in (1, 2):
+        try:
+            resp = httpx.post(url, **kwargs)
+            if resp.status_code not in RETRY_STATUS or attempt == 2:
+                return resp
+        except httpx.TransportError:
+            if attempt == 2:
+                raise
+        time.sleep(RETRY_WAIT_S)
+    raise AssertionError("unreachable")
+
+
 def transcribe(audio_path: str, language_code: str = STT_LANGUAGE,
                mock_text: Optional[str] = None) -> dict:
     """Prisma STT (REST). Audio: WAV/MP3/OGG/FLAC/AAC/M4A, 8-44.1 kHz, max 60 s."""
@@ -48,14 +68,14 @@ def transcribe(audio_path: str, language_code: str = STT_LANGUAGE,
         return mock.mock_transcribe(mock_text or "")
 
     start = time.perf_counter()
-    with open(audio_path, "rb") as f:
-        resp = httpx.post(
-            f"{BASE_URL}/stt/v3",
-            headers=_headers(),
-            files={"audio_file": (Path(audio_path).name, f)},
-            data={"language_code": language_code, "format": settings.stt_format},
-            timeout=30,
-        )
+    audio = Path(audio_path).read_bytes()  # bytes, so a retry sends the whole clip again
+    resp = _post(
+        f"{BASE_URL}/stt/v3",
+        headers=_headers(),
+        files={"audio_file": (Path(audio_path).name, audio)},
+        data={"language_code": language_code, "format": settings.stt_format},
+        timeout=30,
+    )
     resp.raise_for_status()
     result = resp.json()
     result["latency_ms"] = round((time.perf_counter() - start) * 1000)
@@ -79,7 +99,7 @@ def speak(text: str, voice: str = TTS_VOICE, language: str = STT_LANGUAGE,
     if out.exists():
         return out
 
-    resp = httpx.post(
+    resp = _post(
         f"{BASE_URL}/api/v1/tts/inference",
         headers={**_headers(), "Content-Type": "application/json"},
         json={

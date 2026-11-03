@@ -1,6 +1,6 @@
 # Bacha Hua Khana: speech understanding evaluation
 
-Run 25 Oct 2026. 18 labelled recordings (4 English, 4 Hindi, 5 Kannada, 5 Malayalam), plus 18 noisy versions, transcribed with Gnani Prisma v2.5 (`format=transcribe`) and read by the app's rule-based extractor and reply classifier. A check passes only if it matches what was **spoken**, so speech-to-text errors count against us.
+Run 03 Nov 2026. 18 labelled recordings (4 English, 4 Hindi, 5 Kannada, 5 Malayalam), plus 18 noisy versions, transcribed with Gnani Prisma v2.5 (`format=transcribe`) and read by the app's rule-based extractor and reply classifier. A check passes only if it matches what was **spoken**, so speech-to-text errors count against us.
 
 **Whole clips right:** quiet 16/18 (89%), noisy 16/18 (89%), telephony 16/18 (89%).
 

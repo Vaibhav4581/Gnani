@@ -45,6 +45,10 @@ STT_VARIANTS = {
     # Live test, 27 Oct: "Vyttila" read by the Kannada and English voices came back as these.
     "ವೈಟಿಲಾ": "Vyttila", "ವೈಟಿಲ": "Vyttila", "vitla": "Vyttila", "vitila": "Vyttila",
     "vytila": "Vyttila",
+    # Live end-to-end and voice round trips, 3 Nov: the English and Hindi STT wrote these.
+    "thirupanithura": "Thrippunithura", "thirupunithura": "Thrippunithura",
+    "त्रिपुनिथुरा": "Thrippunithura", "विटिला": "Vyttila", "वेटिला": "Vyttila",
+    "एडापल्ली": "Edappally", "एडप्पाली": "Edappally",
 }
 
 

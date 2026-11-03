@@ -243,6 +243,8 @@ LANGUAGE = Language(
     code="ml-IN", name="Malayalam", native_name="മലയാളം", stt_code="ml-IN",
     tts_language="ml-IN", tts_voice="Reshma",  # TTS_VOICE_ML in .env overrides
     lexicon=LEXICON, prompts=PROMPTS, offer=OFFER, scripts=frozenset({"malayalam"}),
+    report_examples=('50 പ്ലേറ്റ് ബിരിയാണി ഉണ്ട്, ഉച്ചയ്ക്ക് 2 മണിക്ക് ഉണ്ടാക്കിയത്', '10 കിലോ ചോറും സാമ്പാറും ഉണ്ട്, ഉച്ചയ്ക്ക് 1 മണിക്ക് ഉണ്ടാക്കിയത്', '30 പ്ലേറ്റ് ചപ്പാത്തി ബാക്കിയുണ്ട്, വൈകുന്നേരം 3 മണിക്ക് ഉണ്ടാക്കിയത്'),
+    need_examples=('40 പേർക്ക് രാത്രി 9 മണിക്ക് മുമ്പ് ഭക്ഷണം വേണം', '50 കുട്ടികൾക്ക് വൈകുന്നേരം 7 മണിക്ക് മുമ്പ് വെജ് ഭക്ഷണം മാത്രം വേണം'),
     mock_report="50 പ്ലേറ്റ് ബിരിയാണി ബാക്കിയുണ്ട്, ഉച്ചയ്ക്ക് 2 മണിക്ക് ഉണ്ടാക്കിയത്, ഇടപ്പള്ളി",
     mock_reply="അതെ ശരിയാണ്",
     need=NEED,

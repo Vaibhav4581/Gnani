@@ -124,8 +124,17 @@
   --rice: #FAFAF7;
   --paper: #FFFFFF;
   --ink: #17261C;
-  --leaf-deep: #17462A;     /* hover on leaf buttons */
-  --mirchi-deep: #A82618;   /* hover on mirchi buttons */
+  --leaf-hover: #17462A;    /* hover on leaf buttons */
+  --mirchi-hover: #A82618;  /* hover on mirchi buttons */
+  --leaf-deep: #143D23;     /* dark leaf, large illustrated areas only (the hero banana leaf) */
+
+  /* the setting: a steel kitchen counter and ticket rail, Kochi's backwaters on the maps */
+  --counter: #E9ECEA;       /* stainless counter surface */
+  --counter-edge: #C3C9CE;  /* the counter's top edge; thali rings */
+  --rail: #8A949C;          /* ticket rail bar and its clips; pins */
+  --water: #A8C3D1;         /* backwaters and the sea edge, maps only */
+  --kolam-dot: color-mix(in srgb, var(--steel-dark) 35%, transparent);
+  --kolam-step: 24px;
 
   /* type */
   --font-display: "Baloo 2", "Baloo Chettan 2", "Baloo Tamma 2", system-ui, sans-serif;
@@ -170,7 +179,11 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--rice);
+  /* A kolam dot grid: 2px dots of --steel-dark at 35%, 24px apart. Quiet enough that text on it
+     keeps its contrast (the dots cover under 1% of the page). */
+  background-color: var(--rice);
+  background-image: radial-gradient(circle, var(--kolam-dot) 0 1px, transparent 1.5px);
+  background-size: var(--kolam-step) var(--kolam-step);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--step-0);
@@ -275,11 +288,11 @@ small, .text-small { font-size: var(--text-small); }
 }
 
 .btn-primary { background: var(--leaf); color: var(--paper); }
-.btn-primary:hover:not(:disabled) { background: var(--leaf-deep); }
+.btn-primary:hover:not(:disabled) { background: var(--leaf-hover); }
 .btn-secondary { background: var(--paper); border-color: var(--steel-dark); color: var(--ink); }
 .btn-secondary:hover:not(:disabled) { border-color: var(--ink); }
 .btn-danger { background: var(--mirchi); color: var(--paper); }
-.btn-danger:hover:not(:disabled) { background: var(--mirchi-deep); }
+.btn-danger:hover:not(:disabled) { background: var(--mirchi-hover); }
 .btn-huge { min-height: var(--tap-big); width: 100%; font-size: var(--step-2); }
 /* The main action on a leaf screen: paper, with leaf text (8.6:1). */
 .btn-inverse { background: var(--paper); color: var(--leaf); }
@@ -670,6 +683,134 @@ small, .text-small { font-size: var(--text-small); }
 .disclosure-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3);
                    padding: 0 0 var(--space-4); }
 
+/* ------------------------------------------------------------------ the setting */
+/* Each screen is a place in a kitchen: tickets hang on a steel rail, the mic stands on the
+   counter inside a thali, a shelter pins its requests to a board. Solid fills only: no gradient
+   washes, no glass. The KOT slip and the mic stay the brightest things on screen. */
+
+/* The counter the mic stands on. */
+.counter { background: var(--counter); border-top: 3px solid var(--counter-edge); }
+
+/* Two steel rings round the mic, like a thali; the live level ring moves inside them. */
+.thali { position: relative; display: grid; place-items: center; }
+.thali::before, .thali::after {
+  content: ""; position: absolute; border: 2px solid var(--counter-edge); border-radius: 50%;
+  pointer-events: none;
+}
+.thali::before { inset: -4px; }
+.thali::after { inset: -22px; }
+
+/* The ticket rail: a 6px steel bar, each ticket hanging from a clip. Scrolls sideways. */
+.rail-wrap { position: relative; padding: var(--space-2) 0 0; }
+.rail-wrap::before {
+  content: ""; position: absolute; left: 0; right: 0; top: calc(var(--space-2) + 9px);
+  height: 6px; border-radius: 3px; background: var(--rail);
+}
+.rail {
+  position: relative; display: flex; align-items: flex-start; gap: var(--space-3);
+  margin: 0; padding: 0 var(--space-1) var(--space-3); list-style: none;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+}
+.rail > li { position: relative; flex: none; padding-top: 20px; scroll-snap-align: start; }
+.rail > li::before {  /* the clip */
+  content: ""; position: absolute; z-index: 1; top: 2px; left: 50%; width: 14px; height: 24px;
+  margin-left: -7px; border: 2px solid var(--counter-edge); border-radius: 3px; background: var(--rail);
+}
+.rail-empty { padding: 26px var(--space-1) var(--space-3); color: var(--steel-dark); }
+
+/* A small ticket: number, amount, status. On the rail and in "Your rescues". */
+.kot--mini { width: max-content; min-width: 9.5rem; max-width: 13rem; }
+.kot--mini .kot-paper { display: grid; gap: 2px; padding: var(--space-2) var(--space-3) calc(var(--space-2) + var(--tooth) / 2); }
+.kot--mini .kot-number { font-size: .8125rem; }
+.kot-mini-qty { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; line-height: 1.15; }
+.kot-mini-dish { overflow: hidden; font-size: .9375rem; font-weight: 600; line-height: 1.3;
+                 text-overflow: ellipsis; white-space: nowrap; }
+.kot--mini .pill { justify-self: start; min-height: 26px; margin-top: 2px; padding: 1px 8px 1px 6px;
+                   font-size: .8125rem; white-space: nowrap; }
+
+/* A soft board with slips pinned to it (the shelter's requests). Pinned slips are white paper
+   with a leaf band under a steel pin, so a leaf-soft need slip doesn't vanish into the board. */
+.pinboard { padding: var(--space-4); border-radius: var(--radius-control); background: var(--leaf-soft); }
+.pinned { position: relative; padding-top: 9px; }
+.pinned::before {  /* the pin */
+  content: ""; position: absolute; z-index: 1; top: 0; left: 50%; width: 18px; height: 18px;
+  margin-left: -9px; border: 3px solid var(--rail); border-radius: 50%; background: var(--counter);
+}
+.pinned .kot-paper { border-top: 4px solid var(--leaf); background: var(--paper); }
+
+/* Faint kolam loops in one corner: the home page and empty states only. */
+.has-kolam { position: relative; isolation: isolate; }
+.kolam { position: absolute; z-index: -1; width: 8.5rem; height: 8.5rem; color: var(--steel-dark);
+         opacity: .3; pointer-events: none; }
+.kolam--top-right { top: -1rem; right: -1rem; }
+.kolam--bottom-left { bottom: -1rem; left: -1rem; }
+
+/* Illustrations (/assets/illustrations.svg): home hero, empty states, "no rescues yet" only. */
+.illus { display: block; overflow: visible; }
+
+/* An empty state says what will appear here, with an illustration. */
+.empty-state { display: grid; justify-items: center; gap: var(--space-2); width: min(100%, 28rem);
+               margin-inline: auto; padding: var(--space-5) var(--space-4); color: var(--steel-dark);
+               text-align: center; }  /* narrow, so the corner loops stay beside the drawing */
+.empty-state .illus { width: 7rem; height: auto; }
+.empty-state p { max-width: 24rem; }
+
+/* ------------------------------------------------------------------ helping first-timers */
+/* "For example:" under a mic (common.js rotateExamples): every sentence sits in the same grid
+   cell, so the box is as tall as the longest and nothing moves when one replaces another. */
+.example-box { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+.example-lead { font-weight: 600; }
+.examples { display: grid; grid-template-columns: minmax(0, 1fr); }
+.examples > .example { grid-area: 1 / 1; margin: 0; font-family: var(--font-display); font-size: var(--step-1);
+                       font-weight: 600; line-height: 1.3; visibility: hidden; opacity: 0;
+                       transition: opacity .4s var(--ease-out), visibility .4s; }
+.examples > .example.is-on { visibility: visible; opacity: 1; }
+
+/* A first-time tip (coach mark): ink, pointing up at what it explains, with "Got it" and
+   "Hide tips". Inline under its target, never a modal and never over what it points at. */
+.tip { position: relative; display: grid; gap: var(--space-2); margin-top: 10px; padding: var(--space-3) var(--space-4);
+       border-radius: var(--radius-control); background: var(--ink); color: var(--paper); text-align: left; }
+.tip::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -8px;
+               border: 8px solid transparent; border-top: 0; border-bottom-color: var(--ink); }
+.tip-step { font-size: var(--text-small); font-weight: 600; }
+.tip-text { font-weight: 600; }
+.tip-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.tip-hide { min-height: var(--tap); padding: 0; border: 0; background: none; color: var(--paper);
+            font: inherit; font-size: var(--text-small); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.tip :focus-visible { outline-color: var(--paper); }
+
+/* Loading: the slip itself, its blank lines breathing (never a spinner on its own). */
+.kot.is-skeleton .kot-slot { animation: slot-wait 1.1s ease-in-out infinite; }
+.kot--mini.is-skeleton .kot-paper { gap: var(--space-2); min-height: 7.5rem; }
+.kot--mini.is-skeleton .kot-slot { display: block; height: .9em; }
+.kot--mini.is-skeleton .kot-slot--wide { width: 80%; height: 1.2em; }
+
+/* ------------------------------------------------------------------ maps */
+/* Schematic maps (/assets/map.js): dots by lat/lng, backwaters drawn by hand, no tiles. */
+.map-svg { display: block; width: 100%; height: auto; background: var(--rice); border-radius: var(--radius-slip); }
+.m-sea { fill: var(--water); opacity: .55; }
+.m-water { fill: none; stroke: var(--water); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.m-area { fill: var(--paper); stroke: var(--steel); stroke-width: 1; }
+.m-area-label { fill: var(--steel-dark); font-family: var(--font-body); font-size: 15px; font-weight: 600; }
+.m-label { fill: var(--ink); font-family: var(--font-display); font-size: 15px; font-weight: 700;
+           paint-order: stroke; stroke: var(--rice); stroke-width: 4px; stroke-linejoin: round; }
+.m-kitchen { fill: var(--haldi); stroke: var(--ink); stroke-width: 1.5; }
+.m-vol { fill: var(--leaf); stroke: var(--paper); stroke-width: 1.5; }
+.m-vol.is-off { fill: var(--paper); stroke: var(--leaf); stroke-width: 1.5; }
+.m-ngo { fill: var(--steel-dark); stroke: var(--paper); stroke-width: 1.5; }
+.m-you { fill: var(--leaf); stroke: var(--paper); stroke-width: 3; }
+.m-you-pulse { fill: var(--leaf); opacity: .25; transform-box: fill-box; transform-origin: center;
+               animation: you-pulse 2.4s ease-out infinite; }
+@keyframes you-pulse { from { transform: scale(1); opacity: .35; } to { transform: scale(2.6); opacity: 0; } }
+.m-route { fill: none; stroke: var(--steel-dark); stroke-width: 1.5; stroke-dasharray: 4 4;
+           stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
+.m-route.is-active { stroke: var(--leaf); stroke-width: 3.5; stroke-dasharray: none; opacity: 1; }
+.m-route.is-asking { stroke: var(--leaf); stroke-width: 2.5; stroke-dasharray: 6 5; opacity: 1; }
+.map-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0;
+           list-style: none; font-size: var(--text-small); }
+.map-key li { display: inline-flex; align-items: center; gap: 6px; }
+.map-key svg { width: 14px; height: 14px; }
+
 /* ------------------------------------------------------------------ first render */
 /* A page whose first screen is drawn by its script (in the user's language, or from live data)
    keeps those regions invisible until then, so nothing jumps as text arrives (no layout shift).
@@ -686,6 +827,7 @@ small, .text-small { font-size: var(--text-small); }
     transition-duration: 1ms !important;
   }
   .mic-btn.is-recording::before { display: none; }
+  .m-you-pulse { display: none; }
   .btn:active:not(:disabled) { transform: none; }
 }
 

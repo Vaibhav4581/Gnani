@@ -55,12 +55,16 @@ body[data-screen="accepted"] #settings { display: none; }
 .me-icon { width: 4.5rem; height: 4.5rem; fill: none; stroke: var(--leaf); stroke-width: 1.6;
            stroke-linecap: round; stroke-linejoin: round; }
 .me-area { font-family: var(--font-display); font-size: var(--step-3); font-weight: 700; line-height: 1.1; }
+.off-side { display: grid; gap: var(--space-5); align-content: center; }
+.screen-off .area-map { display: none; }  /* a phone keeps the off screen short */
+.screen-off .today { padding-top: var(--space-4); border-top: 1px solid var(--steel); }
 
 /* ------------------------------------------------------------------ on duty */
-.calm { display: grid; justify-items: center; gap: var(--space-3); padding-top: var(--space-6); text-align: center; }
-.calm-icon { width: 5.5rem; height: 5.5rem; fill: none; stroke: var(--leaf); stroke-width: 1.5;
-             stroke-linecap: round; stroke-linejoin: round; }
-.calm h1 { font-size: var(--step-4); color: var(--leaf); }
+/* The volunteer's own area as a schematic map (/assets/map.js): their dot pulses gently. */
+.area-map { margin: var(--space-3) 0 0; }
+.area-map .map-svg { max-height: 15rem; border: 1px solid var(--steel); background: var(--rice); }
+.calm { display: grid; justify-items: center; gap: var(--space-2); padding-top: var(--space-2); text-align: center; }
+.calm h1 { font-size: var(--step-3); color: var(--leaf); }
 .calm p { font-size: var(--step-1); }
 .today { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin: 0; text-align: center; }
 .today div { display: grid; grid-template-rows: auto 1fr; align-content: start; }
@@ -68,13 +72,29 @@ body[data-screen="accepted"] #settings { display: none; }
 .today dt { color: var(--ink); font-weight: 600; }
 .today dd { margin: 0; color: var(--leaf); }
 #off-duty { justify-self: center; }
+
+/* "Your rescues": the last three as small tickets, fanned like slips on a spike. */
+.rescues { display: grid; gap: var(--space-3); }
+.rescues h2 { font-size: var(--step-1); }
+.rescue-stack { display: flex; justify-content: center; margin: 0; padding: var(--space-2) 0 var(--space-3); list-style: none; }
+.rescue-stack li + li { margin-left: -2.5rem; }
+.rescue-stack li:nth-child(1) { transform: rotate(-3deg); z-index: 3; }
+.rescue-stack li:nth-child(2) { transform: rotate(1.5deg) translateY(6px); z-index: 2; }
+.rescue-stack li:nth-child(3) { transform: rotate(4deg) translateY(10px); z-index: 1; }
+.rescue-stack li { position: relative; }
+.rescue-stack:empty { display: none; }
 body[data-screen="on"] .callout--success { background: var(--paper); }  /* leaf-soft on leaf-soft vanishes */
 
 /* ------------------------------------------------------------------ incoming offer */
 .timeout { position: fixed; inset: 0 0 auto 0; z-index: 3; height: 8px; background: var(--haldi-soft); }
 #timeout-bar { height: 100%; background: var(--ink); transform-origin: left; }
 .screen-offer { padding-top: var(--space-3); }
-.caller { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4); }
+.caller { position: relative; isolation: isolate; overflow: hidden; display: grid;
+          grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4);
+          padding-block: var(--space-3); }
+/* A phone ringing: faint enlarged rings behind the caller (ink at 8%, on haldi). */
+.ring-lines { position: absolute; z-index: -1; left: calc(36px - 130px); top: 50%; width: 260px; height: 260px;
+              margin-top: -130px; fill: none; stroke: var(--ink); stroke-width: 6; opacity: .08; }
 .caller-ring { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 50%;
                background: var(--paper); }
 .caller-ring svg { width: 2.25rem; height: 2.25rem; fill: none; stroke: var(--ink); stroke-width: 2;
@@ -113,6 +133,7 @@ body[data-screen="on"] .callout--success { background: var(--paper); }  /* leaf-
   background: var(--haldi);
 }
 .call-buttons .btn-huge { font-size: var(--step-1); padding-inline: var(--space-2); }
+.call-note { grid-column: 1 / -1; font-size: var(--text-small); font-weight: 600; text-align: center; }
 .call-mic { width: 4.75rem; padding: 0; }
 .call-mic .icon { width: 48%; }
 .call-mic.is-recording { background: var(--paper); color: var(--ink); }  /* haldi on haldi would vanish */
@@ -140,3 +161,52 @@ body[data-screen="on"] .callout--success { background: var(--paper); }  /* leaf-
 }
 .accepted-note { font-size: var(--step-1); font-weight: 600; }
 body[data-screen="accepted"] :focus-visible { outline-color: var(--paper); }
+
+/* ------------------------------------------------------------------ laptop: one screen */
+/* On duty, the area map stands on the left and the day on the right; an offer puts its ticket
+   on the left and the route, the voice and the answers on the right. Nothing needs scrolling.
+   The accepted screen stays one column: it already fits. */
+@media (min-width: 900px) and (min-height: 600px) {
+  body:is([data-screen="on"], [data-screen="off"]) :is(.topbar, .page-body) { max-width: 66rem; }
+  body[data-screen="off"] .page-body { gap: var(--space-3); padding-bottom: var(--space-4); }
+  /* Off duty: the same map on the left; who you are, the duty button and today on the right */
+  .screen-off { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center;
+                gap: var(--space-7); }
+  .screen-off .area-map { display: block; }
+  body[data-screen="on"] .page-body { gap: var(--space-3); padding-bottom: var(--space-4); }
+  .screen-on { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+               grid-template-areas: "map calm" "map today" "map rescues" "map off";
+               align-content: start; gap: var(--space-3) var(--space-7); }
+  .area-map { margin: 0; }
+  .screen-on .area-map { grid-area: map; }
+  .area-map .map-svg { max-height: calc(100dvh - 10rem); }
+  .calm { grid-area: calm; padding-top: 0; }
+  .screen-on .today { grid-area: today; }
+  .rescues { grid-area: rescues; }
+  #off-duty { grid-area: off; }
+
+  body[data-screen="offer"] .page-body { max-width: 62rem; padding-bottom: var(--space-4); }
+  .screen-offer { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
+                  grid-template-areas: "caller caller" "slip facts" "slip said" "slip listen" "slip call";
+                  gap: var(--space-4) var(--space-6); }
+  .caller { grid-area: caller; }
+  #offer-slip { grid-area: slip; }
+  .screen-offer .facts { grid-area: facts; }
+  .said { grid-area: said; }
+  .listening { grid-area: listen; }
+  .call-buttons { grid-area: call; position: static; margin: 0; padding-inline: 0; }
+}
+/* A short laptop window: the day's numbers stand beside "Your rescues", and the map leaves room
+   for the settings row under it. */
+@media (min-width: 900px) and (min-height: 600px) and (max-height: 799.98px) {
+  .screen-on { grid-template-columns: minmax(0, 1.15fr) minmax(0, .4fr) minmax(0, .6fr);
+               grid-template-areas: "map calm calm" "map today rescues" "map off off"; }
+  .screen-on .today { grid-template-columns: 1fr; align-content: center; }
+  .rescues h2 { text-align: center; }
+  .area-map .map-svg { max-height: calc(100dvh - 13rem); }
+  .screen-off .area-map .map-svg { max-height: calc(100dvh - 14rem); }
+  .off-side { gap: var(--space-4); }
+  .screen-off .me { padding-top: 0; }
+  .screen-offer { gap: var(--space-2) var(--space-6); padding-top: 0; }
+  .caller { padding-block: 0; }
+}

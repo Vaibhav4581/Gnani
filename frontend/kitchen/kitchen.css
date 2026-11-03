@@ -8,8 +8,8 @@ body { min-height: 100dvh; }
    the screen. On a tablet it is one short row and stays. */
 .topbar {
   display: grid;
-  grid-template-areas: "name conn" "seg seg";
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name size conn" "seg seg seg";
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-2) var(--space-3);
   padding: var(--space-2) var(--space-4) var(--space-3);
@@ -37,7 +37,30 @@ body { min-height: 100dvh; }
 }
 .kitchen-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .conn { grid-area: conn; }
+
+/* "Bigger text": the whole page a step up (every size is in rem), remembered on this device. */
+html.big-text { font-size: 125%; }
+html.big-text .topbar .seg-btn { font-size: .8rem; }  /* language names fit as they are */
+.text-size {
+  grid-area: size; display: inline-flex; align-items: center; justify-content: center; align-self: center;
+  white-space: nowrap; min-width: var(--tap); min-height: var(--tap);  /* "A+" on one line */
+  padding: 0 var(--space-2); border: 2px solid var(--steel-dark); border-radius: var(--radius-control);
+  background: var(--paper); color: var(--ink); font-family: var(--font-display); font-size: var(--step-1);
+  font-weight: 700; line-height: 1; cursor: pointer;
+}
+.text-size-plus { font-size: .8em; }
+.text-size[aria-pressed="true"] { border-color: var(--leaf); background: var(--leaf); color: var(--paper); }
 .topbar .seg { grid-area: seg; min-height: calc(var(--tap) + 12px); }  /* filled by app.js */
+
+/* ------------------------------------------------------------------ ticket rail */
+/* Today's reports hang on a steel rail under the top bar, newest first, scrolling sideways. Its
+   heading is the kitchen's day so far: "Today: 3 reports, 140 meals shared". */
+.kitchen-rail { max-width: 72rem; margin: 0 auto; padding: var(--space-2) var(--space-4) 0; }
+.today-strip { font-family: var(--font-body); font-size: var(--text-small); font-weight: 600; line-height: 1.3; }
+.kitchen-rail .rail-empty { font-size: var(--text-small); }
+/* "Last report" repeats the newest ticket on the rail, so it shows only when the rail is empty
+   (the last report was on an earlier day). "Kal jaisa" still works by voice. */
+body:has(#rail .kot--mini:not(.is-skeleton)) #last { display: none; }
 
 /* ------------------------------------------------------------------ stage */
 .stage {
@@ -50,32 +73,43 @@ body { min-height: 100dvh; }
 }
 .mic-col, .slip-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4);
                       min-width: 0; align-content: start; }
+/* The mic stands on the counter: on a phone the counter runs edge to edge and fills the lower
+   part of the screen; with a ticket open it shrinks to a strip holding the small mic. */
+.mic-col.counter { margin-inline: calc(-1 * var(--space-4)); padding: var(--space-6) var(--space-4) var(--space-6);
+                   min-height: 55dvh; align-content: center; }
+.stage:not(.has-slip) { padding-top: 0; }
 #notice { width: 100%; }
-.notice-body { display: grid; gap: var(--space-3); }
-.notice-body .btn { justify-self: start; }
+.conversation:empty { display: none; }
+.notice-body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.notice-body p { flex: 1 1 16rem; }
 
-.mic-zone { display: grid; justify-items: center; gap: var(--space-3); }
+.mic-zone { display: grid; justify-items: center; gap: var(--space-4); }
+.mic-zone .thali { margin: 22px; }  /* room for the outer thali ring */
 .kitchen-mic { width: min(60vw, 320px); margin: 18px; font-size: var(--step-1); }
 .mic-side { display: grid; justify-items: center; gap: var(--space-1); min-width: 0; text-align: center; }
 .mic-caption { display: none; font-family: var(--font-display); font-size: var(--step-2);
                font-weight: 600; line-height: 1.15; }
 .mic-timer { font-family: var(--font-display); font-size: var(--step-3); font-weight: 700; line-height: 1; }
 .mic-hint { color: var(--steel-dark); }
+.mic-side .example-box { max-width: 26rem; }
+.mic-zone .tip { max-width: 24rem; }
+.mic-zone .tip::before { left: 2rem; }  /* points up at the example and the mic above it */
 
-/* Once a ticket is on screen, the mic steps aside for it (phone): a smaller circle with its
-   label beside it, so the ticket and its two answers fit on one screen. */
-@media (max-width: 899px) {
-  .stage.has-slip { gap: var(--space-4); padding-top: var(--space-3); }
-  .stage.has-slip .mic-zone { grid-template-columns: auto minmax(0, 1fr); justify-items: start;
-                              align-items: center; width: 100%; gap: var(--space-4); }
-  .stage.has-slip .kitchen-mic { width: 7rem; margin: 14px; padding: var(--space-3); }
-  .stage.has-slip .kitchen-mic .icon { width: 46%; }
-  .stage.has-slip #talk-label { position: absolute; width: 1px; height: 1px; overflow: hidden;
-                                clip: rect(0 0 0 0); white-space: nowrap; }
-  .stage.has-slip .mic-side { justify-items: start; text-align: left; }
-  .stage.has-slip .mic-caption { display: block; }
-  .stage.has-slip .mic-hint { font-size: var(--text-small); }
-}
+/* Once a ticket is on screen, the mic steps aside for it: a smaller circle with its label
+   beside it, so the ticket and its answers fit on one screen. */
+.stage.has-slip { row-gap: var(--space-4); padding-top: 0; }
+.stage.has-slip .mic-col.counter { min-height: 0; padding-block: var(--space-3); }
+.stage.has-slip .mic-zone .thali { margin: 8px; }
+.stage.has-slip .thali::after { inset: -10px; }
+.stage.has-slip .mic-zone { grid-template-columns: auto minmax(0, 1fr); justify-items: start;
+                            align-items: center; width: 100%; gap: var(--space-4); }
+.stage.has-slip .kitchen-mic { width: 7rem; margin: 14px; padding: var(--space-3); }
+.stage.has-slip .kitchen-mic .icon { width: 46%; }
+.stage.has-slip #talk-label { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                              clip: rect(0 0 0 0); white-space: nowrap; }
+.stage.has-slip .mic-side { justify-items: start; text-align: left; }
+.stage.has-slip .mic-caption { display: block; }
+.stage.has-slip .mic-hint { font-size: var(--text-small); }
 
 /* ------------------------------------------------------------------ what the app said */
 .say {
@@ -147,8 +181,9 @@ body { min-height: 100dvh; }
 /* ------------------------------------------------------------------ tablet, landscape */
 @media (min-width: 900px) {
   .topbar { position: sticky; top: 0; z-index: 2;
-            grid-template-areas: "name seg conn"; grid-template-columns: minmax(0, 1fr) minmax(0, 28rem) auto; }
+ }
   .kitchen-name { font-size: var(--step-2); }
+  .topbar { grid-template-areas: "name seg size conn"; grid-template-columns: minmax(0, 1fr) minmax(0, 28rem) auto auto; }
   .conn { justify-self: end; }
   .stage {
     max-width: 72rem;
@@ -158,5 +193,56 @@ body { min-height: 100dvh; }
     padding-top: var(--space-6);
   }
   .mic-col { position: sticky; top: calc(var(--tap) + var(--space-7)); }
+  .mic-col.counter { margin: 0; min-height: 60dvh; border-radius: var(--radius-button) var(--radius-button) 0 0; }
+  .kitchen-rail { padding-inline: var(--space-6); }
   .say { scroll-margin-top: calc(var(--tap) + var(--space-6)); }  /* clear of the sticky bar */
+}
+/* A laptop or bigger: the page is exactly one screen. The mic grows with the window's height
+   and shrinks to fit what is under it (app.js fitMic); the conversation stands on the counter
+   and the ticket on the right (app.js placeTalk). A column scrolls inside itself only if it
+   still can't fit (Bigger text on a small window). The tips stand in the ticket column. */
+@media (min-width: 900px) and (min-height: 600px) {
+  body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+  .topbar, .kitchen-rail { flex: none; }
+  .kitchen-rail { width: 100%; }  /* a flex item with auto margins would shrink to its tickets */
+  .topbar { position: static; }
+  .stage { flex: 1; min-height: 0; width: 100%; grid-template-rows: minmax(0, 1fr); align-items: stretch;
+           padding-block: var(--space-3) var(--space-4); }
+  .mic-col, .slip-col { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .slip-col { margin: -4px; padding: 4px; }  /* room for focus rings */
+  .mic-col { position: static; }
+  .mic-col.counter { min-height: 0; padding-block: var(--space-4); align-content: safe center;
+                     border-radius: var(--radius-button); }
+  .kitchen-mic { width: clamp(8rem, calc(34dvh - 60px), 300px); }
+  .tip--side { margin-top: 0; }
+  .tip--side::before { top: 1.25rem; left: -8px; margin-left: 0; border: 8px solid transparent;
+                       border-left: 0; border-right-color: var(--ink); }
+  /* With a ticket open the counter holds the conversation under a smaller mic, its hint beside it */
+  .conversation { display: grid; gap: var(--space-4); }
+  #notice { padding: var(--space-2) var(--space-3); font-size: var(--step-0); line-height: 1.35; }
+  .stage.has-slip #last { display: none; }  /* "same as last time" is for starting a report */
+  .stage.has-slip .mic-col.counter { align-content: start; }
+  .stage.has-slip .kitchen-mic { width: clamp(7rem, 16dvh, 9rem); }
+  /* while a first-time tip shows, a closed Settings row steps aside for it */
+  .slip-col:has(> .tip:not([hidden])) > #settings:not([open]) { display: none; }
+}
+/* A short laptop window (a 1366x768 screen, or 125% scaling): the mic and its words stand side
+   by side on the counter, so the example is never below the fold. */
+@media (min-width: 900px) and (min-height: 600px) and (max-height: 799.98px) {
+  .mic-zone { grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: center;
+              column-gap: var(--space-3); }
+  .mic-zone .thali { margin: 12px; }
+  .kitchen-mic { width: clamp(9rem, calc(30dvh - 10px), 220px); }
+  .mic-side { justify-items: start; text-align: left; }
+  .slip-col { gap: var(--space-3); }
+  .slip-col > .tip { gap: var(--space-1); margin-top: 6px; }
+  .slip-col > .tip .tip-text { line-height: 1.35; }
+  .slip-col > .tip .btn { min-height: var(--tap); padding-block: 0; }
+  /* a notice over the mic ("allow the mic") makes room the same way as an open ticket, below */
+  body:has(#notice:not([hidden])) .kitchen-rail .rail-wrap { display: none; }
+}
+/* Not tall enough for the rail and a ticket: while a report is open, the rail folds to its
+   one line ("Today: 3 reports, 140 meals shared"); the open ticket is the newest one anyway. */
+@media (min-width: 900px) and (min-height: 600px) and (max-height: 999.98px) {
+  body:has(.stage.has-slip) .kitchen-rail .rail-wrap { display: none; }
 }

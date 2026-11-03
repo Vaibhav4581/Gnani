@@ -12,7 +12,7 @@ the cache key matches what gnani.speak() will look up during the demo.
 import sys
 
 from . import gnani
-from .languages import LANGUAGES, Language
+from .languages import LANGUAGES, Language, for_voice
 
 
 def fixed_phrases(lang: Language) -> list[str]:
@@ -39,7 +39,7 @@ def fixed_phrases(lang: Language) -> list[str]:
 
 
 def cached(text: str, lang: Language) -> bool:
-    key = gnani.cache_key(text, lang.tts_voice, lang.tts_language, 1.0)
+    key = gnani.cache_key(for_voice(text, lang), lang.tts_voice, lang.tts_language, 1.0)
     return (gnani.TTS_CACHE / f"{key}.wav").exists()
 
 
@@ -52,7 +52,7 @@ def main(warm: bool) -> int:
         print(f"{lang.code} ({lang.tts_voice}): {len(phrases) - len(missing)}/{len(phrases)} cached")
         for text in missing:
             if warm:
-                gnani.speak(text, voice=lang.tts_voice, language=lang.tts_language)
+                gnani.speak(for_voice(text, lang), voice=lang.tts_voice, language=lang.tts_language)
                 print(f"  cached now: {text}")
             else:
                 print(f"  missing: {text}")

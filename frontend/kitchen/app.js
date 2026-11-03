@@ -1,10 +1,11 @@
 // Kitchen screen: hold to talk -> the report writes itself onto a KOT slip -> confirm by voice
 // or button -> two safety questions -> live status on the slip, with a route line. After that
 // the same mic asks "volunteer kab aayega?" or cancels (asked back first). One thing at a time.
-import { $, getJson, liveSocket, postJson, putJson, store, stored } from "/shared/common.js";
+import { $, cue, failureKey, getJson, liveSocket, postJson, putJson, rotateExamples, store,
+         stored } from "/shared/common.js";
 import { Microphone, bindHoldToTalk, extensionFor } from "/shared/recorder.js";
-import { clearKotNotes, clock, renderKot, setKotFields, setKotId, setKotNote, setKotRoute,
-         setKotSpeaking, setKotStatus } from "/assets/kot.js";
+import { clearKotNotes, clock, renderKot, renderMiniKot, renderSkeletonMini, setKotFields, setKotId,
+         setKotNote, setKotRoute, setKotSpeaking, setKotStatus } from "/assets/kot.js";
 import { LANG_ORDER, STRINGS, fill, strings } from "./strings.js";
 
 const ICONS = "/assets/icons.svg";
@@ -12,7 +13,12 @@ const KITCHEN_KEY = "bhk.kitchenId";
 const langKey = (kitchenId) => `bhk.language.${kitchenId}`;
 const ANSWERING = ["CONFIRMING", "SAFETY_CHECK"];  // the next thing said answers the app
 const MISSING_LINE = { dish: "food", quantity: "food", unit: "food", cooked_time: "cooked_at" };
+const BIG_TEXT_KEY = "bhk.bigText";
+const TIPS_KEY = "bhk.tips.kitchen";
+const TIP_ORDER = ["mic", "slip", "answers"];  // first-time tips, each shown when its target appears
+const ONE_SCREEN = matchMedia("(min-width: 900px) and (min-height: 600px)");  // as kitchen.css
 const NOTICE_KIND = { firstUse: "attention", blocked: "error", noNetwork: "error", server: "error",
+                      unreachable: "error", serverDown: "error",
                       silent: "attention", short: "attention", hold: "attention", empty: "attention" };
 
 const state = {
@@ -26,6 +32,10 @@ const state = {
 let talk = null;
 let socket = null;
 let timer = null;
+let stopExamples = () => {};
+
+// Bigger text before anything draws, so the page doesn't jump.
+document.documentElement.classList.toggle("big-text", stored(BIG_TEXT_KEY) === "1");
 
 // ------------------------------------------------------------------ start
 
@@ -49,8 +59,18 @@ async function init() {
   });
 
   const on = (id, fn) => $(id).addEventListener("click", fn);
-  on("confirm-yes", () => send({ answer: "yes" }));
-  on("confirm-no", () => send({ answer: "no" }));
+  on("text-size", toggleBigText);
+  on("tip-ok", () => { tipDone($("tip").dataset.step); offerTips(); });
+  placeTalk();
+  ONE_SCREEN.addEventListener("change", placeTalk);
+  ONE_SCREEN.addEventListener("change", offerTips);  // the mic tip moves between column and counter
+  ONE_SCREEN.addEventListener("change", fitMic);
+  const fit = new ResizeObserver(fitMic);  // a longer example, Bigger text, a shorter window
+  [$("talk").closest(".mic-col"), $("mic-hint").parentElement, $("notice"), $("tip"), $("conversation")]
+    .forEach((node) => fit.observe(node));
+  on("tip-hide", () => { store(TIPS_KEY, "off"); $("tip").hidden = true; });
+  on("confirm-yes", () => { tipDone("answers"); send({ answer: "yes" }); });
+  on("confirm-no", () => { tipDone("answers"); send({ answer: "no" }); });
   on("safety-yes", () => send({ answer: "yes" }));
   on("safety-no", () => send({ answer: "no" }));
   on("cancel-yes", () => send({ answer: "yes" }));
@@ -118,6 +138,96 @@ function applyLanguage() {
   drawLanguages();
   applyStrings();
   resetReport();
+  // "Hold the button and say what's left, for example:" in this kitchen's language
+  stopExamples();
+  stopExamples = rotateExamples($("examples"), k.examples || [], { lang: k.language.split("-")[0] });
+  $("example-lead").textContent = state.t.example;
+  $("text-size-label").textContent = ` ${state.t.bigger}`;
+  $("text-size").title = state.t.bigger;
+  $("text-size").setAttribute("aria-pressed", String(document.documentElement.classList.contains("big-text")));
+  offerTips();
+}
+
+function toggleBigText() {
+  const on = !document.documentElement.classList.contains("big-text");
+  document.documentElement.classList.toggle("big-text", on);
+  $("text-size").setAttribute("aria-pressed", String(on));
+  store(BIG_TEXT_KEY, on ? "1" : "0");
+}
+
+// ------------------------------------------------------------------ first-time tips
+
+// Three short tips, each the first time its target shows: the mic, the slip, the Haan/Nahi
+// buttons. "Got it" moves on, "Hide tips" ends them; remembered on this device.
+function tipsSeen() {
+  const v = stored(TIPS_KEY);
+  return v === "off" ? TIP_ORDER.length : Number(v) || 0;
+}
+
+function tipDone(step) {
+  const i = TIP_ORDER.indexOf(step);
+  if (i < 0 || i < tipsSeen() - 1) return;
+  store(TIPS_KEY, String(Math.max(tipsSeen(), i + 1)));
+  if ($("tip").dataset.step && TIP_ORDER.indexOf($("tip").dataset.step) <= i) $("tip").hidden = true;
+}
+
+// On a laptop the conversation (what the app said, the answers, the questions) stands on the
+// counter under the mic and the ticket has its column to itself; on a phone it all reads in one
+// column, around the ticket.
+const TALK = ["say", "confirm-actions", "safety", "cancel", "expired-note", "after-actions"];
+
+function placeTalk() {
+  if (ONE_SCREEN.matches) $("conversation").append(...TALK.map($));
+  else {
+    $("slip-holder").before($("say"));
+    $("slip-holder").after(...TALK.slice(1).map($));
+  }
+}
+
+// On a laptop the counter never scrolls: the mic shrinks by whatever its words below overflow
+// (never under 9rem, where its label would no longer fit the circle, or 6rem with a ticket open,
+// when the label stands beside it). Otherwise kitchen.css sizes it.
+function fitMic() {
+  const mic = $("talk");
+  const col = mic.closest(".mic-col");
+  mic.style.removeProperty("width");
+  if (!ONE_SCREEN.matches) return;
+  const over = col.scrollHeight - col.clientHeight;
+  if (over <= 0) return;
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const min = ($("stage").classList.contains("has-slip") ? 6 : 9) * rem;
+  const width = mic.getBoundingClientRect().width;
+  mic.style.width = `${Math.min(width, Math.max(min, width - over - 2))}px`;
+}
+
+// Show the next tip if its target is on screen now.
+function offerTips() {
+  const r = state.report;
+  if (r && TIP_ORDER[tipsSeen()] === "mic") tipDone("mic");  // reported already (mic, button or typed)
+  const step = TIP_ORDER[tipsSeen()];
+  const confirming = r?.status === "CONFIRMING" && !r.missing.length;
+  const target = { mic: !r && $("talk").closest(".mic-zone").querySelector(".mic-side"),
+                   slip: confirming && $("slip-holder"),
+                   answers: confirming && $("confirm-actions") }[step];
+  const tip = $("tip");
+  if (!target) {
+    tip.hidden = true;
+    return;
+  }
+  const t = state.t.tips;
+  tip.dataset.step = step;
+  $("tip-step").textContent = fill(t.step, { n: TIP_ORDER.indexOf(step) + 1 });
+  $("tip-text").textContent = t[step];
+  $("tip-ok").textContent = t.ok;
+  $("tip-hide").textContent = t.hide;
+  // On a laptop every tip stands in the ticket column, which has room: the mic's and the
+  // answers' point back across at the counter, the ticket's points up at it (kitchen.css).
+  const wide = ONE_SCREEN.matches;
+  if (wide && step === "mic") $("slip-holder").before(tip);
+  else if (wide) $("slip-holder").after(tip);
+  else target.after(tip);
+  tip.classList.toggle("tip--side", wide && step !== "slip");
+  tip.hidden = false;
 }
 
 function drawLanguages() {
@@ -157,6 +267,7 @@ function applyStrings() {
   bilingual($("new-report"), "after.newReport");
   bilingual($("last-repeat"), "after.repeat");
   $("cancel-q").textContent = t.cancel.q;
+  $("rail-empty").textContent = t.rail.empty;
   $("settings-title").textContent = t.settings;
   $("mock-label").textContent = t.mock;
   $("mock-send").textContent = t.mockSend;
@@ -223,10 +334,10 @@ async function send({ blob = null, answer = null, repeat = false } = {}) {
   }
 }
 
+// Every failure says what to do next (common.js failureKey).
 function problem(err) {
-  if (!navigator.onLine || err instanceof TypeError) return showNotice("noNetwork");
-  if (err.status === 422 && /speech/i.test(err.message)) return showNotice("silent");
-  showNotice("server", { what: err.message });
+  if (err?.status === 422 && /speech/i.test(err.message)) return showNotice("silent");
+  showNotice(failureKey(err), { what: err?.message });
 }
 
 // ------------------------------------------------------------------ the ticket
@@ -248,6 +359,7 @@ function clearTicket() {
 }
 
 async function showReport(data) {
+  loadRail();
   const slip = state.slip;
   const first = !state.report;
   if (first) setKotId(slip, data.report_id);
@@ -258,7 +370,8 @@ async function showReport(data) {
   clearKotNotes(slip);
   setKotStatus(slip, data.status, { word: statusWord(data.status) });
   renderStep();
-  await setKotFields(slip, data.fields, { stagger: first ? 220 : 160 });
+  const shown = data.dish_shown ? { ...data.fields, dish: data.dish_shown } : data.fields;  // in the read-back's script
+  await setKotFields(slip, shown, { stagger: first ? 220 : 160 });
   if (data.status === "CONFIRMING" && state.report.missing.length) {
     setKotNote(slip, MISSING_LINE[state.report.missing[0]] || "food", followUp(data.prompt_text));
   }
@@ -307,6 +420,7 @@ function onLiveMessage(msg) {
     state.live.eta = null;  // a new volunteer, a new estimate
   }
   if (msg.status === "CANCELLED") state.cancelAsked = false;
+  loadRail();
   // What the app last said ("we're finding a volunteer") is out of date now; the ticket's pill
   // carries the live status. Asking ("volunteer kab aayega?") brings a fresh answer back.
   if (!state.speaking) $("say").hidden = true;
@@ -352,6 +466,7 @@ function renderStep() {
   show("after-actions", after, false);  // the ticket's live status matters more than these
   $("ask-status").hidden = ["DELIVERED", "CANCELLED", "EXPIRED"].includes(status);
   if (safety) drawSafety();
+  offerTips();
   if (expired) {
     $("expired-text").textContent = fill(state.t.notice.expired,
       { cooked: clock(r.fields.cooked_at), deadline: clock(r.fields.deadline) });
@@ -366,8 +481,16 @@ function show(id, on, reveal = true) {
   const appearing = on && panel.hidden;
   panel.hidden = !on;
   if (appearing && reveal) {
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    requestAnimationFrame(() => panel.scrollIntoView({ block: "nearest", behavior: still ? "auto" : "smooth" }));
+    const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    requestAnimationFrame(() => {
+      // On a laptop the column scrolls, not the page (if it must): from the top if everything
+      // above this panel fits, so nothing above the answers is cut off.
+      const col = ONE_SCREEN.matches && panel.closest(".slip-col, .mic-col");
+      const fits = col && panel.getBoundingClientRect().bottom - col.getBoundingClientRect().top
+                          + col.scrollTop <= col.clientHeight;
+      if (fits) col.scrollTo({ top: 0, behavior });
+      else panel.scrollIntoView({ block: "nearest", behavior });
+    });
   }
 }
 
@@ -393,11 +516,60 @@ function resetReport({ keepLast = false } = {}) {
   if (!keepLast) loadLastReport();
 }
 
+// ------------------------------------------------------------------ the ticket rail
+
+// Today's reports from this kitchen, newest first, as small tickets on the rail; its heading
+// says the day so far ("Today: 3 reports, 140 meals shared").
+async function loadRail() {
+  const k = state.kitchen;
+  if (!k) return;
+  if (!$("rail").children.length) {  // first load: two blank tickets breathing, not a spinner
+    $("rail-empty").hidden = true;
+    $("rail").setAttribute("aria-busy", "true");
+    $("rail").replaceChildren(...[0, 1].map(() => {
+      const li = document.createElement("li");
+      li.append(renderSkeletonMini());
+      return li;
+    }));
+  }
+  let today = [];
+  let meals = null;
+  try {
+    [today, meals] = await Promise.all([getJson(`/kitchens/${k.id}/today`),
+      getJson(`/impact?kitchen_id=${k.id}`).then((i) => i.today.meals).catch(() => null)]);
+  } catch {
+    $("rail").replaceChildren();
+    $("rail").removeAttribute("aria-busy");
+    $("rail-h").textContent = state.t.rail.empty;
+    return;  // the rail is a record; the page works without it
+  }
+  if (state.kitchen !== k) return;
+  const t = state.t;
+  const m = meals ? `${meals.estimated ? "≈" : ""}${meals.total}` : "0";
+  $("rail-h").textContent = !today.length ? t.rail.empty  // one line: what will hang here
+    : fill(today.length === 1 ? t.today.one : t.today.many, { n: today.length, m });
+  $("rail").removeAttribute("aria-busy");
+  $("rail-empty").hidden = true;
+  $("rail").replaceChildren(...today.map((r) => {
+    const li = el("li");
+    li.append(renderMiniKot(r, { words: t.kot, word: railWord(r.status) }));
+    return li;
+  }));
+}
+
+function railWord(status) {
+  const s = state.t.status;
+  if (status === "OFFERED") return s.MATCHING;
+  if (status === "ASSIGNED") return state.t.rail.onWay;
+  return s[status] || null;
+}
+
 // ------------------------------------------------------------------ last report
 
 async function loadLastReport() {
   const k = state.kitchen;
   if (!k) return;
+  loadRail();
   let last = null;
   try {
     last = await getJson(`/kitchens/${k.id}/last-report`);
@@ -456,11 +628,15 @@ function updateMic() {
     $("talk-label").textContent = label;
     $("mic-caption").textContent = label;
   }
-  $("mic-hint").textContent = state.busy || state.speaking ? ""
-    : mode === "report" ? t.hint.report : mode === "ask" ? t.hint.ask : "";
+  const idle = mode === "report" && !state.busy && !state.speaking && !talk?.isRecording();
+  $("example-box").hidden = !idle;  // the examples say it better than the hint, while idle
+  $("mic-hint").textContent = state.busy || state.speaking || idle ? "" : mode === "ask" ? t.hint.ask : "";
 }
 
 function recordingStarted() {
+  cue("start");
+  tipDone("mic");
+  $("tip").hidden = true;
   $("talk").classList.add("is-recording");
   $("talk-icon").setAttribute("href", `${ICONS}#stop`);
   $("talk-label").textContent = state.t.mic.recording;
@@ -478,6 +654,7 @@ function recordingStarted() {
 }
 
 function recordingStopped() {
+  cue("stop");
   clearInterval(timer);
   $("timer").hidden = true;
   $("talk").classList.remove("is-recording");

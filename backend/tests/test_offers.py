@@ -10,7 +10,7 @@ from app.db import engine as db
 from app.db import init_db
 from app.languages import get_language
 from app.models import Event, Offer, Report, ReportStatus
-from app.offers import Job, OfferEngine, OfferStatus, alert_text, classify_answer
+from app.offers import Job, OfferEngine, OfferStatus, alert_text, classify_answer, spoken_km
 
 from .conftest import NOW
 
@@ -229,13 +229,31 @@ JOB = Job(report_id=1, kitchen_id=1, kitchen_name="Annapurna Mess, Kakkanad", ar
 
 def test_alert_in_volunteer_language():
     hi = alert_text(JOB, 3.47, get_language("hi-IN"))
-    assert hi == ("Naya pickup! 50 plate veg biryani, Kakkanad, 3.5 kilometre door. "
+    assert hi == ("Naya pickup! 50 plate veg biryani, Kakkanad, 3 kilometre door. "
                   "shaam 6 baje tak pickup karna hai. Kya aap le sakte hain? Haan ya nahi boliye.")
     en = alert_text(JOB, 3.47, get_language("en-IN"))
-    assert en.startswith("New pickup! 50 plates of veg biryani at Kakkanad, 3.5 kilometres away.")
+    assert en.startswith("New pickup! 50 plates of veg biryani at Kakkanad, 3 kilometres away.")
+
+
+@pytest.mark.parametrize("km, said", [(0.4, "1"), (1.4, "1"), (2.5, "3"), (6.2, "6")])
+def test_distance_is_spoken_in_whole_kilometres(km, said):
+    """Voices read "6.2" as "6 point 2"; the screen still shows the exact distance."""
+    assert spoken_km(km) == int(said)
+    assert f"{said} kilometre door" in alert_text(JOB, km, get_language("hi-IN"))
+
+
+def test_english_says_one_kilometre():
+    assert "at Kakkanad, 1 kilometre away." in alert_text(JOB, 0.6, get_language("en-IN"))
+    assert "at Kakkanad, 6 kilometres away." in alert_text(JOB, 6.2, get_language("en-IN"))
 
 
 def test_alert_says_food_when_dish_script_does_not_match_voice():
+    pasta = Job(**{**JOB.__dict__, "dish": "pasta"})  # no Malayalam spelling for it
+    ml = alert_text(pasta, 3.47, get_language("ml-IN"))
+    assert "ഭക്ഷണം" in ml and "pasta" not in ml
+
+
+def test_alert_spells_a_known_latin_dish_in_the_volunteers_script():
     ml = alert_text(JOB, 3.47, get_language("ml-IN"))
-    assert "ഭക്ഷണം" in ml and "veg biryani" not in ml
+    assert "വെജ് ബിരിയാണി" in ml and "veg biryani" not in ml
     assert "കാക്കനാട്" in ml  # place name in Malayalam script

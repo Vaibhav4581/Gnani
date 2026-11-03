@@ -73,6 +73,19 @@ def by_time(dt: datetime) -> str:
     return f"{_period(dt.hour)} {clock}"
 
 
+# A dish name that arrives in Latin letters (typed, or code-switched speech) as the Kannada voice
+# and screen should say it, like ml.SPOKEN_DISH. Found in the live voice check, 3 Nov 2026.
+SPOKEN_DISH = {
+    "biryani": "ಬಿರಿಯಾನಿ", "biriyani": "ಬಿರಿಯಾನಿ", "biryaani": "ಬಿರಿಯಾನಿ", "pulao": "ಪುಲಾವ್",
+    "pulav": "ಪುಲಾವ್", "chapati": "ಚಪಾತಿ", "chapathi": "ಚಪಾತಿ", "sambar": "ಸಾಂಬಾರ್",
+    "sambhar": "ಸಾಂಬಾರ್", "rice": "ಅನ್ನ", "anna": "ಅನ್ನ", "dal": "ದಾಲ್", "daal": "ದಾಲ್",
+    "curry": "ಕರಿ", "kari": "ಕರಿ", "idli": "ಇಡ್ಲಿ", "dosa": "ದೋಸೆ", "upma": "ಉಪ್ಪಿಟ್ಟು",
+    "uppittu": "ಉಪ್ಪಿಟ್ಟು", "roti": "ರೊಟ್ಟಿ", "rotti": "ರೊಟ್ಟಿ", "palya": "ಪಲ್ಯ",
+    "sabzi": "ಪಲ್ಯ", "rasam": "ರಸಂ", "saaru": "ಸಾರು", "khichdi": "ಕಿಚಡಿ", "pongal": "ಪೊಂಗಲ್",
+    "bisibelebath": "ಬಿಸಿಬೇಳೆಬಾತ್", "paneer": "ಪನೀರ್", "chicken": "ಚಿಕನ್", "egg": "ಮೊಟ್ಟೆ",
+    "veg": "ವೆಜ್", "meals": "ಊಟ", "paratha": "ಪರೋಟ", "halwa": "ಹಲ್ವಾ", "kheer": "ಪಾಯಸ",
+}
+
 PROMPTS = Prompts(
     confirm="{quantity} {unit} {dish}, {cooked} ಮಾಡಿದ್ದು{location}. "
             "{veg}{deadline} ಪಿಕಪ್ ಆಗಬೇಕು. ಸರಿಯೇ?",
@@ -97,6 +110,7 @@ PROMPTS = Prompts(
     at_time=at_time,
     by_time=by_time,
     area_names=KANNADA_NAMES,
+    dish_words=SPOKEN_DISH,
 )
 
 OFFER = OfferPrompts(
@@ -164,6 +178,8 @@ LANGUAGE = Language(
     code="kn-IN", name="Kannada", native_name="ಕನ್ನಡ", stt_code="kn-IN",
     tts_language="kn-IN", tts_voice="Saanvi", lexicon=LEXICON, prompts=PROMPTS,
     offer=OFFER, scripts=frozenset({"kannada"}),
+    report_examples=('50 ಪ್ಲೇಟ್ ಬಿರಿಯಾನಿ ಉಳಿದಿದೆ, ಮಧ್ಯಾಹ್ನ 2 ಗಂಟೆಗೆ ಮಾಡಿದ್ದು', '10 ಕೆಜಿ ಅನ್ನ ಸಾಂಬಾರ್ ಇದೆ, ಮಧ್ಯಾಹ್ನ 1 ಗಂಟೆಗೆ ಮಾಡಿದ್ದು', '30 ಪ್ಲೇಟ್ ಚಪಾತಿ ಉಳಿದಿದೆ, ಮಧ್ಯಾಹ್ನ 3 ಗಂಟೆಗೆ ಮಾಡಿದ್ದು'),
+    need_examples=('40 ಜನರಿಗೆ ರಾತ್ರಿ 9 ಗಂಟೆಯ ಒಳಗೆ ಊಟ ಬೇಕು', '50 ಮಕ್ಕಳಿಗೆ ಸಂಜೆ 7 ಗಂಟೆಯ ಒಳಗೆ ಸಸ್ಯಾಹಾರ ಮಾತ್ರ ಬೇಕು'),
     mock_report="50 ಪ್ಲೇಟ್ ಬಿರಿಯಾನಿ ಉಳಿದಿದೆ, ಮಧ್ಯಾಹ್ನ 2 ಗಂಟೆಗೆ ಮಾಡಿದ್ದು, ವೈಟ್ಟಿಲ",
     mock_reply="ಹೌದು ಸರಿ",
     need=NEED,
