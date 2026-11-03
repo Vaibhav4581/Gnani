@@ -1,7 +1,7 @@
 // NGO screen: the shelter coordinator asks for food by voice (read back as a need slip, confirmed
 // by voice or button), follows the food on its way as tickets (soonest first, with the volunteer
 // and ETA), and answers "Khana aa gaya?" on the arriving ticket by voice or with Haan / Nahi.
-import { $, getJson, liveSocket, postJson, store, stored } from "/shared/common.js";
+import { $, failureKey, getJson, liveSocket, postJson, rotateExamples, store, stored } from "/shared/common.js";
 import { Microphone, bindHoldToTalk, extensionFor } from "/shared/recorder.js";
 import { clearKotNotes, clock, renderKot, renderNeedSlip, setKotNote, setKotRoute, setKotStatus,
          updateNeedSlip } from "/assets/kot.js";
@@ -21,6 +21,7 @@ const state = {
 };
 let socket = null;
 let talk = null;
+let stopExamples = () => {};
 let refresh = null;
 const player = new Audio();
 
@@ -66,6 +67,9 @@ async function init() {
   });
   window.addEventListener("online", updateConn);
   window.addEventListener("offline", updateConn);
+  const fit = new ResizeObserver(() => fitRequests());  // a window, a need being read back, settings
+  document.querySelectorAll(".ask, .ask > :not(.requests)").forEach((node) => fit.observe(node));
+  ONE_SCREEN.addEventListener("change", fitRequests);
   await loadNgos();
   document.body.classList.remove("is-loading");  // first screen drawn: show it (design.css)
 }
@@ -75,8 +79,8 @@ async function init() {
 async function loadNgos() {
   try {
     state.ngos = await getJson("/ngos");
-  } catch {
-    return notice(state.t.notice.noNetwork, "error");
+  } catch (err) {
+    return problem(err);
   }
   const chosen = state.ngos.find((n) => String(n.id) === stored(NGO_KEY));
   useNgo(chosen || state.ngos[0]);
@@ -125,7 +129,7 @@ function applyStrings() {
   $("today-people-label").textContent = t.today.people;
   $("today-meals-label").textContent = t.today.meals;
   $("incoming-h").textContent = t.incoming.title;
-  $("incoming-empty").textContent = t.incoming.empty;
+  $("incoming-empty-text").textContent = t.incoming.empty;
   $("arrival-q").textContent = t.arrival.q;
   bilingual($("arrival-yes"), "arrival.yes");
   bilingual($("arrival-no"), "arrival.no");
@@ -133,6 +137,10 @@ function applyStrings() {
   $("arrival-talk").setAttribute("aria-label", t.arrival.hold);
   $("ask-h").textContent = t.ask.title;
   $("ask-hint").textContent = t.ask.hint;
+  $("example-lead").textContent = t.example;
+  stopExamples();
+  stopExamples = rotateExamples($("examples"), state.ngo.examples || [],
+                                { lang: state.ngo.language.split("-")[0] });
   bilingual($("confirm-yes"), "confirm.yes");
   bilingual($("confirm-no"), "confirm.no");
   bilingual($("more"), "ask.more");
@@ -308,18 +316,55 @@ function drawRequests(needs) {
     n.needed_by ? clock(n.needed_by) : null,
     n.veg_only ? (words.vegOnly || "Veg only") : null,
   ].filter(Boolean).join(" · ");
+  // Each request is its need slip, pinned to the board (white paper, a leaf band, a steel pin).
   const list = needs.filter((n) => n.status !== "CONFIRMING");
   $("request-list").replaceChildren(...(list.length ? list.map((n) => {
-    const li = el("li");
-    li.append(el("span", "request-what", label(n)), needPill(n.status, words));
+    const li = el("li", "pinned");
+    const slip = renderNeedSlip({ ...n, ngo: "" }, { words });
+    slip.setAttribute("aria-label", `${label(n)}: ${slip.querySelector('[data-role="status"]').textContent}`);
+    li.append(slip);
     return li;
   }) : [el("li", "empty", t.requests.none)]));
+  fitRequests();
 }
 
-function needPill(status, words) {
-  // The same pills as the need slip (colour + icon + word).
-  const slip = renderNeedSlip({ status }, { words });
-  return slip.querySelector('[data-role="status"]');
+// On a laptop the page is one screen: when the requests don't fit under the mic, the oldest
+// fold to one row (head count, number, status), oldest first, and if even that is too tall the
+// oldest step behind "+N more", which opens the list in full (ngo.css).
+const ONE_SCREEN = matchMedia("(min-width: 1000px) and (min-height: 600px)");  // as ngo.css
+
+function fitRequests() {
+  const list = $("request-list");
+  const col = list.closest(".ask");
+  const items = [...list.querySelectorAll(":scope > .pinned")];
+  list.querySelector(".request-more")?.remove();
+  items.forEach((li) => { li.classList.remove("is-folded"); li.hidden = false; });
+  if (!ONE_SCREEN.matches) return;
+  const open = list.classList.contains("is-open");
+  const over = () => col.scrollHeight > col.clientHeight + 1;
+  for (let i = items.length - 1; i >= 0 && (open || over()); i--) items[i].classList.add("is-folded");
+  if (open) return list.append(moreRequests(state.t.requests.less));
+  if (!over()) return;
+  const more = moreRequests("");
+  list.append(more);
+  let hidden = 0;
+  for (let i = items.length - 1; i >= 1 && over(); i--) {
+    items[i].hidden = true;
+    more.firstChild.textContent = fill(state.t.requests.more, { n: ++hidden });
+  }
+  if (!hidden) more.remove();
+}
+
+function moreRequests(text) {
+  const li = el("li", "request-more");
+  const btn = el("button", "btn btn-secondary", text);
+  btn.type = "button";
+  btn.addEventListener("click", () => {
+    $("request-list").classList.toggle("is-open");
+    fitRequests();
+  });
+  li.append(btn);
+  return li;
 }
 
 // ------------------------------------------------------------------ "Khana aa gaya?"
@@ -378,8 +423,13 @@ function play(url) {
 
 function updateMic() {
   const m = state.t.mic;
-  const label = state.busy ? m.sending : state.need?.status === "CONFIRMING" ? m.reply : m.ask;
+  const confirming = state.need?.status === "CONFIRMING";
+  const label = state.busy ? m.sending : confirming ? m.reply : m.ask;
   if (!talk?.isRecording()) $("talk-label").textContent = label;
+  // idle: "Hold the button and say what you need, for example: ..." instead of the plain hint
+  const idle = !state.busy && !confirming && !talk?.isRecording();
+  $("example-box").hidden = !idle;
+  $("ask-hint").hidden = idle;
 }
 
 function recording(button, iconId, on) {
@@ -409,9 +459,9 @@ function addMockText(form, blob) {
   $("mock-text").value = "";
 }
 
+// Every failure says what to do next (common.js failureKey).
 function problem(err) {
-  if (!navigator.onLine || err instanceof TypeError) return notice(state.t.notice.noNetwork, "error");
-  notice(fill(state.t.notice.server, { what: err.message }), "error");
+  notice(fill(state.t.notice[failureKey(err)], { what: err?.message }), "error");
 }
 
 // ------------------------------------------------------------------ notices and connection

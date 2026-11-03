@@ -10,9 +10,11 @@ from typing import Iterable, Optional
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from .languages import get_language
+from .languages import LANGUAGES, get_language, screen_dish
 from .models import Event, Kitchen, Need, NeedStatus, Ngo, Offer, Report, ReportStatus, Volunteer
 from .seed import AREAS
+
+ENGLISH = LANGUAGES["en-IN"]  # the dashboard is in English
 
 WINDOW = timedelta(hours=24)
 
@@ -141,7 +143,7 @@ def card(s: Session, report: Report, names: Optional[dict[int, str]] = None) -> 
         "id": report.id, "column": column_for(status), "lane": lane_for(status, ngo is not None),
         "status": ReportStatus(report.status).value, "badge": badge, "volunteer": volunteer,
         "kitchen": kitchen.name if kitchen else "?", "language": lang.code,
-        "native_name": lang.native_name, "dish": report.dish, "quantity": report.quantity,
+        "native_name": lang.native_name, "dish": screen_dish(report.dish, ENGLISH), "quantity": report.quantity,
         "unit": report.unit, "deadline": _iso(report.deadline),
         "created_at": _iso(report.created_at), "volunteers_tried": len(offers),
         "declined": [{"volunteer": names.get(o.volunteer_id, "?"),
@@ -368,8 +370,8 @@ def timeline(s: Session, report_id: int) -> Optional[dict]:
     return {
         "card": card(s, report, names),
         "transcript": report.transcript,
-        "fields": {"dish": report.dish, "quantity": report.quantity, "unit": report.unit,
-                   "cooked_at": _iso(report.cooked_at), "location": report.location,
+        "fields": {"dish": screen_dish(report.dish, ENGLISH), "quantity": report.quantity,
+                   "unit": report.unit, "cooked_at": _iso(report.cooked_at), "location": report.location,
                    "deadline": _iso(report.deadline), "veg": report.veg},
         "need": _need_summary(s, report),
         "tried": [{"rank": o.rank, "volunteer": names.get(o.volunteer_id, "?"),

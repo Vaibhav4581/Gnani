@@ -73,6 +73,12 @@ body { min-height: 100dvh; }
 .mic-zone { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4); }
 .ngo-mic { width: 10rem; margin: 14px; padding: var(--space-4); font-size: var(--step-0); }
 .mic-hint { margin: 0; }
+.mic-side { display: grid; gap: var(--space-2); min-width: 0; }
+.mic-side .examples > .example { font-size: var(--step-0); }
+/* The narrowest phones: the mic above its examples, so long Malayalam words never overflow. */
+@media (max-width: 380px) {
+  .mic-zone { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+}
 .say { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: var(--space-3);
        padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); border-left: 4px solid var(--leaf);
        border-radius: var(--radius-control); background: var(--leaf-soft); font-weight: 600; }
@@ -83,10 +89,13 @@ body { min-height: 100dvh; }
 
 .requests { display: grid; gap: var(--space-2); }
 .requests h3 { font-size: var(--step-1); }
-.request-list { display: grid; margin: 0; padding: 0; list-style: none; }
-.request-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-                   gap: var(--space-2) var(--space-3); padding: var(--space-3) 0; border-top: 1px dashed var(--steel); }
-.request-what { font-weight: 600; }
+/* Requests are need slips pinned to a leaf-soft board (design.css .pinboard, .pinned). */
+.request-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: var(--space-4);
+                margin: 0; padding: 0; list-style: none; }
+.request-list .kot { max-width: none; }
+.request-list .kot-kitchen:empty { display: none; }
+.request-list .qty, .request-list .kot-slot--qty { font-size: var(--step-3); }
+.request-list .empty { grid-column: 1 / -1; }
 
 /* ------------------------------------------------------------------ wide screens */
 @media (min-width: 1000px) {
@@ -99,4 +108,33 @@ body { min-height: 100dvh; }
             padding-inline: var(--space-6); }
   #notice { grid-column: 1 / -1; }
   .food-list { max-width: 36rem; }
+}
+
+/* A laptop or bigger: the page is one screen. Older requests fold to fit under the mic
+   (app.js); a column scrolls inside itself only as a last resort (many tickets on the way). */
+@media (min-width: 1000px) and (min-height: 600px) {
+  body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+  .topbar { flex: none; }
+  .layout { flex: 1; min-height: 0; width: 100%; row-gap: 0; padding-block: var(--space-4);
+            grid-template-rows: auto minmax(0, 1fr); }
+  #notice { grid-row: 1; margin-bottom: var(--space-4); }
+  .incoming, .ask { grid-row: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+                    scrollbar-width: thin; margin: -4px; padding: 4px; }  /* room for focus rings */
+  .ask { display: flex; flex-direction: column; }
+  .ask > * { flex: none; }
+  .request-list { grid-template-columns: minmax(0, 1fr); }
+  /* a request folded when the board is full (app.js fitRequests): one row of head count,
+     number and status */
+  .pinned.is-folded .kot-paper { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3);
+                                 padding-block: var(--space-2) calc(var(--space-2) + var(--tooth) / 2); }
+  .pinned.is-folded .kot-head { flex: 1; order: 2; padding: 0; border: 0; }
+  .pinned.is-folded .kot-kitchen:empty { display: none; }
+  .pinned.is-folded .kot-line:not(.kot-line--food) { display: none; }
+  .pinned.is-folded .kot-line--food { padding: 0; border: 0; }
+  .pinned.is-folded .kot-line--food .kot-value { font-size: var(--step-1); }
+  .request-more .btn { width: 100%; }
+}
+/* A short laptop window: a smaller mic, so the requests keep their room under it. */
+@media (min-width: 1000px) and (min-height: 600px) and (max-height: 799.98px) {
+  .ngo-mic { width: 8rem; margin: 10px; padding: var(--space-3); }
 }

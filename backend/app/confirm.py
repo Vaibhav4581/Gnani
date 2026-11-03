@@ -11,7 +11,7 @@ from typing import Optional
 from .config import settings
 from .extractor import Extraction, Extractor, WordTable, get_extractor, is_agglutinative, tokenize
 from .intents import contains_phrase
-from .languages import LANGUAGES, Language, get_language
+from .languages import LANGUAGES, Language, get_language, screen_dish
 from .need_extractor import VEG_WORDS
 
 
@@ -54,7 +54,7 @@ def _spoken_food(ex: Extraction, lang: Optional[Language]) -> dict[str, str]:
     units = p.units_singular if p.units_singular and ex.quantity == 1 else p.units
     location = p.location.format(location=p.area_names.get(ex.location, ex.location)) \
         if ex.location else ""
-    dish = " ".join(p.dish_words.get(w.lower(), w) for w in ex.dish.split())
+    dish = screen_dish(ex.dish, lang or get_language(None))
     return {"quantity": fmt_quantity(ex.quantity), "unit": units[ex.unit], "dish": dish,
             "location": location}
 

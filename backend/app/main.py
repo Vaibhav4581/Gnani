@@ -21,18 +21,18 @@ import httpx
 from fastapi import (BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile,
                      WebSocket, WebSocketDisconnect)
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 from sqlmodel import Session, delete, select
 
-from . import ask, audio, cards, changes, dashboard, eval_summary, gnani, impact, repeat, safety
+from . import ask, audio, cards, changes, dashboard, demo_history, eval_summary, gnani, impact, repeat, safety
 from .config import now_local, settings
 from .confirm import ReplyKind, Turn, deadline_for, handle_reply, initial_turn
 from .db import engine, get_session, init_db, log_event
 from .extractor import Extraction, get_extractor
-from .languages import LANGUAGES, Language, get_language
+from .languages import LANGUAGES, Language, for_voice, get_language, screen_dish
 from .matcher import kitchen_to_ngo_km, travel_minutes
 from .models import (Event, Kitchen, Need, NeedStatus, Ngo, Offer, Report, ReportStatus,
                      Volunteer)
@@ -173,7 +173,8 @@ def _speak(session: Session, report_id: Optional[int], text: str, lang: Language
            audience: Optional[str] = None) -> str:
     try:
         with timed(latencies, "tts"):
-            path = gnani.speak(text, voice=lang.tts_voice, language=lang.tts_language)
+            path = gnani.speak(for_voice(text, lang), voice=lang.tts_voice,
+                               language=lang.tts_language)
     except httpx.HTTPStatusError as exc:
         raise HTTPException(502, f"Gnani TTS failed ({exc.response.status_code})") from exc
     except (httpx.HTTPError, RuntimeError) as exc:
@@ -239,6 +240,7 @@ def _payload(report: Report, transcript: str, turn: Turn, lang: Language,
             "veg": report.veg,
             "covered": report.covered,
         },
+        "dish_shown": screen_dish(report.dish, lang),  # as the read-back writes it
         "missing": turn.fields.missing_required,
         "prompt_text": turn.prompt,
         "audio_url": audio_url,
@@ -254,7 +256,8 @@ EVAL_RESULTS = settings.frontend_dir.parent / "eval" / "RESULTS.md"
 @app.get("/")
 def root() -> FileResponse:
     """The home page: what the app does, the four screens, and the Gnani speech stack."""
-    return FileResponse(settings.frontend_dir / "home" / "index.html", media_type="text/html")
+    return FileResponse(settings.frontend_dir / "home" / "index.html", media_type="text/html",
+                        headers={"Cache-Control": "no-cache"})  # as AppFiles
 
 
 @app.get("/eval/summary")
@@ -283,7 +286,7 @@ def _kitchen_json(k: Kitchen) -> dict:
     lang = get_language(k.language)
     return {"id": k.id, "name": k.name, "language": lang.code, "language_name": lang.name,
             "native_name": lang.native_name, "sample": lang.mock_report,
-            "repeat_hint": lang.prompts.repeat_hint}
+            "repeat_hint": lang.prompts.repeat_hint, "examples": list(lang.report_examples)}
 
 
 @app.get("/kitchens")
@@ -359,6 +362,27 @@ def create_report(audio_file: Optional[UploadFile] = File(None), kitchen_id: int
     return {**body, "repeat": outcome, "repeat_of": rep.template_id if rep else None}
 
 
+@app.get("/kitchens/{kitchen_id}/today")
+def kitchen_today(kitchen_id: int, session: Session = Depends(get_session)) -> list[dict]:
+    """This kitchen's reports today, newest first: the ticket rail on the kitchen page."""
+    lang = _kitchen_language(session, kitchen_id)
+    if not session.get(Kitchen, kitchen_id):
+        raise HTTPException(404, "Unknown kitchen")
+    start = now_local().replace(hour=0, minute=0, second=0, microsecond=0)
+    rows = session.exec(select(Report).where(Report.kitchen_id == kitchen_id,
+                                             Report.created_at >= start)
+                        .order_by(Report.id.desc())).all()
+    return [{"id": r.id, "dish": screen_dish(r.dish, lang), "quantity": r.quantity, "unit": r.unit, "veg": r.veg,
+             "status": ReportStatus(r.status).value, "created_at": r.created_at.isoformat()}
+            for r in rows]
+
+
+@app.get("/map")
+def map_places(session: Session = Depends(get_session)) -> dict:
+    """Kitchens, volunteers, shelters and area centres by synthetic lat/lng, for the maps."""
+    return dashboard.places(session, hub.online_volunteers())
+
+
 @app.get("/kitchens/{kitchen_id}/last-report")
 def kitchen_last_report(kitchen_id: int, session: Session = Depends(get_session)) -> Optional[dict]:
     """What "kal jaisa" would copy, for the kitchen page's "Last report" card."""
@@ -367,7 +391,8 @@ def kitchen_last_report(kitchen_id: int, session: Session = Depends(get_session)
     last = repeat.last_report(session, kitchen_id)
     if last is None:
         return None
-    return {"report_id": last.id, "dish": last.dish, "quantity": last.quantity,
+    lang = _kitchen_language(session, kitchen_id)
+    return {"report_id": last.id, "dish": screen_dish(last.dish, lang), "quantity": last.quantity,
             "unit": last.unit, "location": last.location, "veg": last.veg,
             "cooked_at": _iso(last.cooked_at), "status": last.status.value}
 
@@ -526,13 +551,27 @@ def list_volunteers(session: Session = Depends(get_session)) -> list[dict]:
 def volunteer_today(volunteer_id: int, session: Session = Depends(get_session)) -> dict:
     """This volunteer's finished rescues today, for the on-duty screen. Counted the same way
     as the impact numbers."""
-    if not session.get(Volunteer, volunteer_id):
+    volunteer = session.get(Volunteer, volunteer_id)
+    if not volunteer:
         raise HTTPException(404, "Unknown volunteer")
+    lang = get_language(volunteer.language)
     today = now_local().date()
-    mine = [r for r in impact.rescues(session)
-            if r.volunteer_id == volunteer_id and r.completed_at.date() == today]
-    summary = impact.summarize(mine)
-    return {"rescues": summary["rescues"], "meals": summary["meals"]["total"]}
+    everything = sorted((r for r in impact.rescues(session) if r.volunteer_id == volunteer_id),
+                        key=lambda r: r.completed_at, reverse=True)
+    summary = impact.summarize([r for r in everything if r.completed_at.date() == today])
+    return {"rescues": summary["rescues"], "meals": summary["meals"]["total"],
+            "recent": [_rescue_json(session, r, lang) for r in everything[:3]]}
+
+
+def _rescue_json(session: Session, rescue: "impact.Rescue", lang: Language) -> dict:
+    """One finished rescue, for the volunteer's "Your rescues" slips."""
+    r = rescue.report
+    kitchen = session.get(Kitchen, r.kitchen_id)
+    ngo = session.get(Ngo, rescue.need.ngo_id) if rescue.need else None
+    return {"id": r.id, "kitchen": kitchen.name if kitchen else None, "dish": screen_dish(r.dish, lang),
+            "quantity": r.quantity, "unit": r.unit, "veg": r.veg,
+            "status": ReportStatus(r.status).value, "ngo": ngo.name if ngo else None,
+            "completed_at": rescue.completed_at.isoformat()}
 
 
 @app.websocket("/ws/volunteer/{volunteer_id}")
@@ -702,7 +741,8 @@ def _ngo_json(n: Ngo) -> dict:
     lang = get_language(n.language)
     return {"id": n.id, "name": n.name, "language": lang.code, "language_name": lang.name,
             "native_name": lang.native_name, "area": nearest_area(n.lat, n.lng),
-            "sample": lang.need.mock_need, "sample_yes": lang.mock_reply}
+            "sample": lang.need.mock_need, "sample_yes": lang.mock_reply,
+            "examples": list(lang.need_examples)}
 
 
 @app.get("/ngos")
@@ -818,7 +858,7 @@ def reply_to_need(need_id: int, background: BackgroundTasks,
 def _question_audio(lang: Language) -> Optional[str]:
     """The delivery question, spoken once per language and then served from the TTS cache."""
     try:
-        path = gnani.speak(lang.need.delivery_question, voice=lang.tts_voice,
+        path = gnani.speak(for_voice(lang.need.delivery_question, lang), voice=lang.tts_voice,
                            language=lang.tts_language)
         return f"/tts/{path.name}"
     except Exception:
@@ -868,7 +908,8 @@ def _need_json(s: Session, need: Need) -> dict:
     if report is not None:
         kitchen = s.get(Kitchen, report.kitchen_id)
         eta, arriving = _eta_to_ngo(s, report, kitchen, ngo, now_local())
-        out["report"] = {"id": report.id, "status": report.status.value, "dish": report.dish,
+        out["report"] = {"id": report.id, "status": report.status.value,
+                         "dish": screen_dish(report.dish, lang),
                          "quantity": report.quantity, "unit": report.unit,
                          "kitchen": kitchen.name if kitchen else "?",
                          "volunteer": _accepted_volunteer(s, report.id),
@@ -1040,9 +1081,10 @@ async def delivery_reply(report_id: int, background: BackgroundTasks,
 # ---------------------------------------------------------------- impact (Phase 5)
 
 @app.get("/impact")
-def get_impact(session: Session = Depends(get_session)) -> dict:
-    """Counted impact, today and all time. Meals from kg/litres are a labelled estimate."""
-    return impact.impact(session, now_local())
+def get_impact(kitchen_id: Optional[int] = None, session: Session = Depends(get_session)) -> dict:
+    """Counted impact, today and all time. Meals from kg/litres are a labelled estimate.
+    kitchen_id: just that kitchen's rescues (the kitchen page's "meals shared today")."""
+    return impact.impact(session, now_local(), kitchen_id)
 
 
 @app.get("/cards/{report_id}.png")
@@ -1087,11 +1129,13 @@ async def dashboard_socket(ws: WebSocket) -> None:
         hub.remove_dashboard(ws)
 
 
-def _reset_demo_data() -> None:
+def _reset_demo_data(history: bool) -> None:
     with Session(engine) as s:
         for table in (Event, Offer, Report, Need):
             s.exec(delete(table))
         seed(s)  # commits
+        if history:
+            demo_history.add_demo_history(s, now_local())  # a day of rescues so far; commits
         s.add(demo_need(now_local()))  # one open need, so the full chain shows
         s.commit()
     changes.drain()  # nothing left to report on
@@ -1099,14 +1143,15 @@ def _reset_demo_data() -> None:
 
 
 @app.post("/admin/seed")
-async def reset_demo(confirm: bool = False) -> dict:
+async def reset_demo(confirm: bool = False, history: bool = True) -> dict:
     """Delete every report, offer, need and event, restore the demo kitchens, volunteers
-    and NGOs, and open one demo need (seed.demo_need). The TTS cache is kept, so credits
-    already spent stay spent once."""
+    and NGOs, add a synthetic day of rescues so far (demo_history; history=false leaves it
+    empty) and open one demo need (seed.demo_need). No speech calls; the TTS cache is kept,
+    so credits already spent stay spent once."""
     if not confirm:
         raise HTTPException(400, "This deletes all reports. Call again with ?confirm=true")
     await offer_engine.shutdown()
-    await run_in_threadpool(_reset_demo_data)
+    await run_in_threadpool(_reset_demo_data, history)
     await hub.to_all_volunteers({"type": "reset"})
     await hub.to_all_ngos({"type": "reset"})
     await hub.to_all_kitchens({"type": "reset"})
@@ -1124,18 +1169,28 @@ def get_tts(name: str) -> FileResponse:
     return FileResponse(path, media_type="audio/wav")
 
 
+class AppFiles(StaticFiles):
+    """The frontend's files. The browser asks for a newer copy on every load (a cheap 304 when
+    nothing changed), so a plain reload never runs a stale script against a new page."""
+
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers.setdefault("Cache-Control", "no-cache")
+        return response
+
+
 app.add_middleware(GZipMiddleware, minimum_size=1024)  # pages, scripts and styles go out compressed
-app.mount("/home", StaticFiles(directory=settings.frontend_dir / "home"), name="home")
-app.mount("/kitchen", StaticFiles(directory=settings.frontend_dir / "kitchen", html=True),
+app.mount("/home", AppFiles(directory=settings.frontend_dir / "home"), name="home")
+app.mount("/kitchen", AppFiles(directory=settings.frontend_dir / "kitchen", html=True),
           name="kitchen")
-app.mount("/volunteer", StaticFiles(directory=settings.frontend_dir / "volunteer", html=True),
+app.mount("/volunteer", AppFiles(directory=settings.frontend_dir / "volunteer", html=True),
           name="volunteer")
-app.mount("/ngo", StaticFiles(directory=settings.frontend_dir / "ngo", html=True), name="ngo")
-app.mount("/dashboard", StaticFiles(directory=settings.frontend_dir / "dashboard", html=True),
+app.mount("/ngo", AppFiles(directory=settings.frontend_dir / "ngo", html=True), name="ngo")
+app.mount("/dashboard", AppFiles(directory=settings.frontend_dir / "dashboard", html=True),
           name="dashboard")
-app.mount("/shared", StaticFiles(directory=settings.frontend_dir / "shared"), name="shared")
+app.mount("/shared", AppFiles(directory=settings.frontend_dir / "shared"), name="shared")
 # The design system (DESIGN.md): tokens, fonts, icons and the KOT slip, shared by every page.
-app.mount("/assets", StaticFiles(directory=settings.frontend_dir / "assets"), name="assets")
+app.mount("/assets", AppFiles(directory=settings.frontend_dir / "assets"), name="assets")
 
 
 @app.get("/styleguide.html", include_in_schema=False)

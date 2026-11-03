@@ -20,6 +20,8 @@
         <span id="kitchen-label">Kitchen</span>
         <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg>
       </button>
+      <button class="text-size" id="text-size" type="button" aria-pressed="false" title="Bigger text">A<span
+              class="text-size-plus">+</span><span class="visually-hidden" id="text-size-label"> Bigger text</span></button>
       <span class="conn" id="conn" data-state="live" role="status">
         <span class="conn-dot" aria-hidden="true"></span><span id="conn-word">Live</span>
       </span>
@@ -27,9 +29,17 @@
     <div class="seg" id="langs" role="radiogroup" aria-label="Language"></div>
   </header>
 
+  <section class="kitchen-rail" aria-labelledby="rail-h" data-reveal>
+    <h2 class="today-strip" id="rail-h">Today</h2>
+    <div class="rail-wrap">
+      <ol class="rail" id="rail" aria-label="Today's reports"></ol>
+      <p class="rail-empty" id="rail-empty">Today's reports will hang here.</p>
+    </div>
+  </section>
+
   <main class="stage" id="stage" data-reveal>
     <h1 class="visually-hidden">Bacha Hua Khana: kitchen</h1>
-    <section class="mic-col" aria-label="Microphone">
+    <section class="mic-col counter" aria-label="Microphone">
       <div class="callout" id="notice" role="alert" hidden>
         <svg class="icon" aria-hidden="true"><use id="notice-icon" href="/assets/icons.svg#cross"/></svg>
         <div class="notice-body">
@@ -39,16 +49,32 @@
       </div>
 
       <div class="mic-zone">
-        <button class="mic-btn mic-btn--ring kitchen-mic" id="talk" type="button">
-          <svg class="icon" aria-hidden="true"><use id="talk-icon" href="/assets/icons.svg#mic"/></svg>
-          <span id="talk-label">Hold to report food</span>
-        </button>
+        <div class="thali">
+          <button class="mic-btn mic-btn--ring kitchen-mic" id="talk" type="button">
+            <svg class="icon" aria-hidden="true"><use id="talk-icon" href="/assets/icons.svg#mic"/></svg>
+            <span id="talk-label">Hold to report food</span>
+          </button>
+        </div>
         <div class="mic-side">
           <p class="mic-caption" id="mic-caption" aria-hidden="true"></p>
           <p class="mic-timer num" id="timer" hidden>0:00</p>
           <p class="mic-hint" id="mic-hint"></p>
+          <div class="example-box" id="example-box" hidden>
+            <p class="example-lead" id="example-lead"></p>
+            <div class="examples" id="examples"></div>
+          </div>
+        </div>
+        <div class="tip" id="tip" role="note" hidden>
+          <p class="tip-step" id="tip-step"></p>
+          <p class="tip-text" id="tip-text"></p>
+          <div class="tip-actions">
+            <button class="btn btn-inverse" id="tip-ok" type="button">Got it</button>
+            <button class="tip-hide" id="tip-hide" type="button">Hide tips</button>
+          </div>
         </div>
       </div>
+      <!-- On a laptop what the app said and the answers stand here, under the mic (app.js). -->
+      <div class="conversation" id="conversation"></div>
     </section>
 
     <section class="slip-col" aria-label="Food report">

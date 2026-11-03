@@ -29,11 +29,17 @@
     <nav class="top-links" aria-label="Other screens">
       <a href="/kitchen/">Kitchen</a><a href="/volunteer/">Volunteer</a><a href="/ngo/">Shelter</a>
     </nav>
+    <button id="explain" class="quiet-btn explain-btn" type="button" aria-pressed="false">What am I looking at?</button>
     <button id="reset" class="quiet-btn" type="button">Reset demo</button>
   </header>
+  <div class="callout callout--error dash-problem" id="problem" role="alert" hidden>
+    <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#cross"/></svg>
+    <p id="problem-text"></p>
+  </div>
 
   <main id="content" data-reveal>
   <section class="strip" aria-label="Impact today">
+    <p class="explain" hidden>Meals count only finished rescues: delivered to a shelter, or picked up when no shelter had asked. “On duty” means the volunteer has their page open right now.</p>
     <div class="strip-item strip-item--hero">
       <span id="i-meals" class="strip-big num">0</span>
       <span class="strip-label">meals rescued today</span>
@@ -47,21 +53,25 @@
   <div class="main" id="main">
     <div class="col">
       <p class="visually-hidden" id="announce" aria-live="polite"></p>
-      <section class="board" aria-label="Route board: reports from kitchens to shelters">
+      <section class="board" id="board" aria-label="Route board: reports from kitchens to shelters">
         <section class="lane" data-lane="reported" aria-labelledby="h-reported">
           <h2 class="lane-h" id="h-reported">Reported <span class="lane-n num" id="n-reported">0</span></h2>
+          <p class="explain" hidden>A kitchen just spoke. The app reads the report back and asks two safety questions before anything moves.</p>
           <ol class="lane-list" id="lane-reported"></ol>
         </section>
         <section class="lane" data-lane="finding" aria-labelledby="h-finding">
           <h2 class="lane-h" id="h-finding">Finding a volunteer <span class="lane-n num" id="n-finding">0</span></h2>
+          <p class="explain" hidden>Confirmed, covered food. Volunteers are called one at a time, nearest first; a “no” passes it to the next.</p>
           <ol class="lane-list" id="lane-finding"></ol>
         </section>
         <section class="lane" data-lane="on_way" aria-labelledby="h-on_way">
           <h2 class="lane-h" id="h-on_way">On the way <span class="lane-n num" id="n-on_way">0</span></h2>
+          <p class="explain" hidden>A volunteer said yes and is carrying the food, to the shelter that asked for it if there is one.</p>
           <ol class="lane-list" id="lane-on_way"></ol>
         </section>
         <section class="lane" data-lane="delivered" aria-labelledby="h-delivered">
           <h2 class="lane-h" id="h-delivered">Delivered <span class="lane-n num" id="n-delivered">0</span></h2>
+          <p class="explain" hidden>The shelter said it arrived, or it was a pickup with no shelter. Click any slip for its full timeline.</p>
           <ol class="lane-list" id="lane-delivered"></ol>
         </section>
       </section>
@@ -71,8 +81,10 @@
           <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#chevron-down"/></svg></summary>
         <ol class="lane-list closed-list" id="lane-closed"></ol>
       </details>
+    </div>
 
-      <div class="below">
+    <!-- Under the board on smaller screens; a side column on a laptop, where the page fits one screen. -->
+    <div class="below">
         <div class="below-left">
         <section class="panel pipeline" aria-labelledby="pipe-h">
           <h2 id="pipe-h" class="panel-h">Voice pipeline <span class="panel-sub">average, last 24 h</span></h2>
@@ -96,7 +108,6 @@
           <ul id="map-routes" class="map-routes" aria-label="Routes on the map"></ul>
           <p id="map-cap" class="panel-note">Placed by lat/lng, not a street map. Volunteers are drawn at their home area (no live GPS).</p>
         </section>
-      </div>
     </div>
 
     <aside class="detail" id="detail" hidden aria-labelledby="d-title">
@@ -109,6 +120,7 @@
           <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#cross"/></svg>
         </button>
       </header>
+      <div class="detail-skeleton" id="d-skeleton" aria-hidden="true" hidden></div>
       <div class="detail-status" id="d-status"></div>
       <section class="detail-sec" aria-labelledby="d-heard-h">
         <h3 id="d-heard-h" class="sec-h">What the kitchen said</h3>

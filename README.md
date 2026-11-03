@@ -23,6 +23,12 @@ impact-card sizes, is in [`docs/screenshots/`](docs/screenshots/).
 
 ![Coordinator dashboard: the route board, with "Anjali said no" on the slip and its timeline open](docs/screenshots/04-dashboard-fallback-anjali-said-no.png)
 
+On a laptop each screen fits the window without scrolling:
+
+| Kitchen | Volunteer, before going on duty | Shelter |
+|---|---|---|
+| ![Kitchen screen on a laptop: today's tickets on the rail, the mic and an example sentence](docs/screenshots/16-kitchen-laptop.png) | ![Volunteer screen on a laptop: area map, Start duty and today's rescues](docs/screenshots/17-volunteer-laptop.png) | ![Shelter screen on a laptop: food on the way and the mic to ask for food](docs/screenshots/18-shelter-laptop.png) |
+
 ## Features
 
 - **Report by voice:** *"pachaas plate veg biryani, do baje bana, Kakkanad se"* gives
@@ -133,7 +139,7 @@ stateDiagram-v2
     MATCHING --> OFFERED: best volunteer on duty
     OFFERED --> MATCHING: "nahi" or timeout, next volunteer
     OFFERED --> ASSIGNED: "haan"
-    ASSIGNED --> PICKED_UP: "I've picked it up"
+    ASSIGNED --> PICKED_UP: volunteer taps "Picked up"
     PICKED_UP --> DELIVERED: NGO says "haan" (food matched to a need)
     PICKED_UP --> [*]: no NGO need, rescue ends here
     MATCHING --> CANCELLED: kitchen cancels, asked back first
@@ -199,7 +205,9 @@ uvicorn app.main:app --reload --port 8000
   without mic** runs every step without a microphone.
 - **Live mode** (`MOCK_GNANI=0`) needs `GNANI_API_KEY` and ffmpeg.
 - **Voices:** `TTS_VOICE_ML=Reshma` in `.env` sets the Malayalam voice;
-  `TTS_VOICE_HI`, `TTS_VOICE_EN` and `TTS_VOICE_KN` work the same way.
+  `TTS_VOICE_HI`, `TTS_VOICE_EN` and `TTS_VOICE_KN` work the same way. The Hindi voice is
+  given each reply in Devanagari (`app/languages/hi_voice.py`) while the screen shows Roman
+  Hinglish: read in Roman letters, it said "dal chawal" and Kochi place names wrong.
 - **Phones:** the microphone only works on `localhost` or over HTTPS. To use real
   phones, run a tunnel such as `ngrok http 8000` or
   `cloudflared tunnel --url http://localhost:8000`.
@@ -218,7 +226,7 @@ uvicorn app.main:app --reload --port 8000
    need: Karunya Children's Home, Kakkanad, 80 people, any food, about three hours
    from now. It shows under **Open needs**.
 2. Open the volunteer page twice, as **Anjali Menon** and **John Mathew** (two phones
-   or two tabs), and tap **I'm on duty** on both. Only volunteers with the page open
+   or two tabs), and tap **Start duty** on both. Only volunteers with the page open
    get offers. For Annapurna Mess's 50 plates, Anjali is asked first and John second.
    Rahul (40 plates) and Arjun (30) are too small, and Deepa is off duty.
 3. Open the NGO page as **Karunya Children's Home**.
@@ -230,10 +238,10 @@ uvicorn app.main:app --reload --port 8000
    hai"*, then *"nahi"* to hear *"Kripya khana dhak dijiye…"*, then *"haan, dhak
    diya"*.
 6. The NGO page says food is coming. Anjali's phone rings with the offer in Malayalam,
-   naming the kitchen and the shelter. Say *"illa"* or tap **Nahi**. The **fallback**:
+   naming the kitchen and the shelter. Say *"illa"* or tap **No**. The **fallback**:
    John gets the offer in English a moment later. Say *"yes"*.
 7. On the kitchen page, ask *"volunteer kab aayega?"* and hear John's ETA.
-8. As John, tap **I've picked it up**, then **I've delivered it**. The NGO page asks
+8. As John, tap **Picked up**, then **Delivered**. The NGO page asks
    *"Has the food arrived?"*. Say yes.
 9. On the dashboard: the slip slides into **Delivered** and the impact numbers go up.
    The slip carries "Anjali said no". Click it for the timeline: what was heard, the
@@ -249,7 +257,7 @@ uvicorn app.main:app --reload --port 8000
 
 Reset keeps the TTS cache, so running the demo again costs nothing for phrases
 already spoken. If nobody on duty can take the food, the report waits and is offered
-as soon as someone taps **I'm on duty**.
+as soon as someone taps **Start duty**.
 
 ### Before a live demo: cache the fixed phrases
 
@@ -366,22 +374,24 @@ for a recording.
 | POST | `/reports/audio` | multipart `audio_file` (+ optional `kitchen_id`, `mock_transcript`). Creates a report and returns the fields, missing fields, prompt text and `audio_url`. `repeat=true` instead of audio is the kitchen page's "Same as yesterday" button: it says the language's repeat phrase, with no speech-to-text. |
 | POST | `/reports/{id}/ask` | multipart `audio_file` (+ `mock_transcript`), after confirming. Works out the intent (status, cancel or unknown) and answers from the report's real state in the kitchen's language: `text`, `audio_url`, `volunteer`, `eta_min`, `action`. A cancel is asked back (`cancel_confirm`); a yes then cancels, a no keeps it. `answer=status\|yes\|no` instead of audio is a tapped button (no speech-to-text). |
 | POST | `/reports/{id}/reply` | multipart `audio_file`. While CONFIRMING: classifies the reply (yes / no / correction / unclear), merges any corrections and returns the next state. A yes starts the safety check: the same endpoint then takes the answers (`safety_question`: `veg`, then `covered`) until MATCHING (volunteer matching starts) or EXPIRED. `answer=yes\|no` instead of audio is a tapped button (no speech-to-text). |
-| GET | `/kitchens` | Kitchens with their language and repeat phrase (`repeat_hint`). |
+| GET | `/kitchens` | Kitchens with their language, repeat phrase (`repeat_hint`) and `examples` (sentences shown under the mic). |
+| GET | `/kitchens/{id}/today` | The kitchen's reports today, newest first (id, dish, quantity, unit, veg, status), for the ticket rail. |
+| GET | `/map` | Kitchens, volunteers (with `on_duty`), shelters and area centres by synthetic lat/lng, for the maps. |
 | GET | `/kitchens/{id}/last-report` | What "kal jaisa" would copy: dish, quantity, unit, location, veg, cooked time; `null` if nothing yet. |
 | GET | `/languages` | Languages the picker offers: code, name, native name. |
 | PUT | `/kitchens/{id}/language` | JSON `{"language": "ml-IN"}`: the picker's choice. Unknown language 422, unknown kitchen 404. |
 | GET | `/volunteers` | Volunteers with language, area and capacity. |
-| GET | `/volunteers/{id}/today` | That volunteer's finished rescues and meals today (`{rescues, meals}`), counted like `/impact`. |
+| GET | `/volunteers/{id}/today` | That volunteer's finished rescues and meals today (`{rescues, meals}`), counted like `/impact`, and `recent`: their last three finished rescues for "Your rescues". |
 | POST | `/reports/{id}/picked-up?by=volunteer\|dashboard\|kitchen` | ASSIGNED → PICKED_UP. Repeating it is safe; any other state returns 409. |
 | GET | `/dashboard/board` | Cards for the last 24 hours (each with its `lane`, `declined` marks and map ids), column counts, average latency per stage, open needs, `on_duty` volunteer ids and the `map` (kitchens, volunteers, NGOs, area centres). |
 | GET | `/dashboard/reports/{id}` | One report's timeline, fields and volunteers tried. Every entry carries `ms` (its latency); spoken lines carry `audio` (`/tts/<file>`). |
 | WS | `/ws/dashboard` | Pushes `update` messages (changed cards, counts, stats) about every 0.5 s, `duty` when a volunteer comes on or goes off duty, and `reset`. |
-| POST | `/admin/seed?confirm=true` | Demo reset: deletes all reports, offers, needs and events, restores the demo kitchens, volunteers and NGOs, and opens one demo need (Karunya Children's Home, 80 people, about 3 hours ahead). Every page gets a `reset` message. No login: prototype only. |
+| POST | `/admin/seed?confirm=true` | Demo reset: deletes all reports, offers, needs and events, restores the demo kitchens, volunteers and NGOs, adds a synthetic day of rescues so far (no speech calls; `&history=false` starts empty), and opens one demo need (Karunya Children's Home, 80 people, about 3 hours ahead). Every page gets a `reset` message. No login: prototype only. |
 | WS | `/ws/volunteer/{id}` | On duty. Receives `offer` and `offer_closed` messages. |
 | WS | `/ws/kitchen/{id}` | Receives `match` status messages for that kitchen's reports, and `reset`. |
 | POST | `/offers/{id}/reply` | multipart `audio_file` (+ `mock_transcript`): the volunteer's spoken haan / nahi. Unclear answers leave the offer open. |
 | POST | `/offers/{id}/accept`, `/offers/{id}/decline` | Button answers. Repeating an answer is safe; answering a closed offer returns 409, whose `detail.taken_by` names the volunteer who took it, if anyone did. |
-| GET | `/ngos` | NGOs/shelters with language and area. |
+| GET | `/ngos` | NGOs/shelters with language, area and `examples` (need sentences shown under the mic). |
 | POST | `/needs/audio` | multipart `audio_file`, `ngo_id` (+ `mock_transcript`). Creates a need and returns people, needed-by time, veg-only, the prompt and its audio. |
 | POST | `/needs/{id}/reply` | The NGO's yes / no / correction. A yes opens the need, and food still waiting is matched again. `answer=yes\|no` instead of audio is a tapped button. |
 | GET | `/needs?status=open` | Needs, newest first, optionally by status. |
@@ -390,7 +400,7 @@ for a recording.
 | POST | `/reports/{id}/delivered?by=volunteer` | The volunteer has handed the food over; the NGO page is asked to confirm. 409 unless picked up and matched to a need. |
 | POST | `/reports/{id}/delivery-reply` | The NGO's answer: `audio_file` (spoken) or `answer=yes\|no`. Yes: PICKED_UP → DELIVERED. No is logged and shown on the dashboard. |
 | WS | `/ws/ngo/{id}` | Receives `need` updates (food found, volunteer assigned, on the way) and `delivery_check`. |
-| GET | `/impact` | Impact numbers `today` and `all_time`: rescues, meals (`counted`, `estimated`, `total`), kitchens, volunteers, NGOs, people served. `assumptions` gives the meals-per-kg value. |
+| GET | `/impact` | Impact numbers `today` and `all_time`: rescues, meals (`counted`, `estimated`, `total`), kitchens, volunteers, NGOs, people served. `assumptions` gives the meals-per-kg value. `?kitchen_id=` counts one kitchen's rescues only (the kitchen page's "meals shared today"). |
 | GET | `/cards/{id}.png` | Impact card for a finished rescue; 404 before that. `format=square` (1080×1080, the default) or `portrait` (1080×1350). Each size is drawn once, then served from `backend/cards/`. |
 | GET | `/` | The home page. |
 | GET | `/eval/summary` | The run line, whole-clip score, first table and caveat from `eval/RESULTS.md`, for the home page. 404 if the eval hasn't been run. |

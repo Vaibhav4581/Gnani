@@ -189,7 +189,7 @@ def test_alert_says_where_to_collect_and_deliver():
               dish="veg biryani", quantity=50, unit="plate", deadline=T(18), need_id=1, ngo_id=3,
               ngo_name="Karunya Children's Home", ngo_area="Kakkanad", needed_by=T(20), people=80)
     hi = alert_text(job, 2.34, get_language("hi-IN"))
-    assert "Kakkanad se uthakar Karunya Children's Home" in hi and "Kul 2.3 kilometre" in hi
+    assert "Kakkanad se uthakar Karunya Children's Home" in hi and "Kul 2 kilometre." in hi
     en = alert_text(job, 2.34, get_language("en-IN"))
     assert "deliver to Karunya Children's Home in Kakkanad" in en
     ml = alert_text(job, 2.34, get_language("ml-IN"))  # a Latin name the Malayalam voice can't read

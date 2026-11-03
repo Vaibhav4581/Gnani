@@ -117,7 +117,7 @@ FULL = Extraction("biryani", 50, "plate", T(14), "Kakkanad")
 @pytest.mark.parametrize("code,expected", [
     ("ml-IN", "50 പ്ലേറ്റ് ബിരിയാണി, ഉച്ചയ്ക്ക് 2 മണിക്ക് ഉണ്ടാക്കിയത്, സ്ഥലം കാക്കനാട്. "
               "വൈകുന്നേരം 6 മണിക്ക് മുമ്പ് പിക്കപ്പ് ചെയ്യണം. ശരിയാണോ?"),
-    ("kn-IN", "50 ಪ್ಲೇಟ್ biryani, ಮಧ್ಯಾಹ್ನ 2 ಗಂಟೆಗೆ ಮಾಡಿದ್ದು, ಸ್ಥಳ ಕಾಕ್ಕನಾಡ್. "
+    ("kn-IN", "50 ಪ್ಲೇಟ್ ಬಿರಿಯಾನಿ, ಮಧ್ಯಾಹ್ನ 2 ಗಂಟೆಗೆ ಮಾಡಿದ್ದು, ಸ್ಥಳ ಕಾಕ್ಕನಾಡ್. "
               "ಸಂಜೆ 6 ಗಂಟೆಯ ಒಳಗೆ ಪಿಕಪ್ ಆಗಬೇಕು. ಸರಿಯೇ?"),
     ("en-IN", "50 plates of biryani, cooked at 2 PM, from Kakkanad. "
               "Pickup needed by 6 PM. Is that correct?"),
@@ -178,3 +178,10 @@ def test_kitchen_language_drives_the_loop(client, kitchen_id, code):
 def test_kitchens_endpoint_lists_languages(client):
     langs = {k["language"] for k in client.get("/kitchens").json()}
     assert {"hi-IN", "ml-IN", "kn-IN", "en-IN"} <= langs
+
+
+def test_kannada_read_back_says_latin_dish_names_in_kannada():
+    """A dish typed or said in Latin letters is read back in Kannada script (kn.SPOKEN_DISH)."""
+    from app.confirm import confirmation_text
+    text = confirmation_text(Extraction("veg pulao", 10, "kg", T(11, 30), "Vyttila"), LANGUAGES["kn-IN"])
+    assert "ವೆಜ್ ಪುಲಾವ್" in text and not any("a" <= ch.lower() <= "z" for ch in text)

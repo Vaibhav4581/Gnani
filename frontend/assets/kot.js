@@ -226,6 +226,38 @@ export function stopCountdown(slip) {
   fillLine(slip, "deadline");
 }
 
+// A small ticket for lists (the kitchen's rail, a volunteer's rescues): number, amount and dish,
+// status pill. `report`: id, quantity, unit, dish, status. Static: no countdown, no write-in.
+export function renderMiniKot(report, { words = {}, word = null } = {}) {
+  const w = { ...WORDS, ...words, status: { ...WORDS.status, ...words.status },
+              units: { ...WORDS.units, ...words.units } };
+  const slip = el("article", "kot kot--mini");
+  slip.dataset.status = report.status || "RECORDED";
+  const paper = el("div", "kot-paper");
+  const number = el("span", "kot-number", ticketNumber(report.id));
+  const [one, many] = w.units[report.unit] || [report.unit || "", report.unit || ""];
+  const qty = report.quantity != null ? `${fmt(report.quantity)} ${Number(report.quantity) === 1 ? one : many}` : "";
+  paper.append(number, el("span", "kot-mini-qty", qty || "…"));
+  if (report.dish) paper.append(el("span", "kot-mini-dish", report.dish));
+  const pill = statusPill(slip.dataset.status, word || w.status[slip.dataset.status]);
+  paper.append(pill);
+  slip.append(paper);
+  slip.setAttribute("aria-label", [w.report, number.textContent, qty, report.dish, pill.textContent]
+    .filter(Boolean).join(", "));
+  return slip;
+}
+
+// A mini ticket still loading: blank lines breathing (.is-skeleton). Hidden from screen readers;
+// put aria-busy on the list it sits in.
+export function renderSkeletonMini() {
+  const slip = el("article", "kot kot--mini is-skeleton");
+  slip.setAttribute("aria-hidden", "true");
+  const paper = el("div", "kot-paper");
+  paper.append(el("span", "kot-slot"), el("span", "kot-slot kot-slot--wide"), el("span", "kot-slot"));
+  slip.append(paper);
+  return slip;
+}
+
 // ------------------------------------------------------------------ drawing
 
 function pillFor(slip, status, word = null) {

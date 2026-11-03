@@ -114,3 +114,13 @@ def test_get_extractor_returns_protocol_instance(now):
 def test_prisma_spellings_of_vyttila(heard, extractor, now):
     """Exactly what Prisma returned in the live telephony test."""
     assert extractor.extract(heard, now).location == "Vyttila"
+
+
+@pytest.mark.parametrize("text, place", [
+    # how Prisma wrote the place names in the live end-to-end run (3 Nov)
+    ("we have 50 plates of veg pulao left cooked at 12 pm from thirupanithura", "Thrippunithura"),
+    ("50 प्लेट बिरयानी दोपहर 12 बजे बनी थी विटिला से", "Vyttila"),
+    ("50 प्लेट बिरयानी दोपहर 12 बजे बनी थी एडापल्ली से", "Edappally"),
+])
+def test_place_names_as_prisma_wrote_them(text, place):
+    assert get_extractor().extract(text, datetime(2026, 11, 3, 13)).location == place

@@ -15,6 +15,12 @@ by voice in their language to carry it there. Prototype only.
 - All UI follows DESIGN.md and uses frontend/assets/. Colours only from tokens; sentence case; no
   layout shift (is-loading/data-reveal for script-drawn first screens); language names in .lang-name;
   pages under 300 KB without audio (GZipMiddleware is on). Screenshots: docs/screenshots/.
+  On a laptop (>= 900px wide, kitchen/volunteer; 1000px shelter; 1200px dashboard; and >= 600px
+  tall) each app screen is exactly one screen: no page scroll, and columns shrink or fold to fit
+  (fitMic, fitRequests, fitLanes/fitSide), scrolling inside only as a last resort
+  (DESIGN.md "One screen on a laptop"; check at 1366x650 and 1536x730, real browser windows).
+  Phones scroll as before. Home (>= 1000px): top-bar tabs Home (hero, count, buttons, apps) /
+  How it works / Built on Gnani AI / About, each one screen (home.js).
 
 ## Gnani APIs (the only external speech services allowed)
 Base URL: https://api.vachana.ai, auth header `X-API-Key-ID: <GNANI_API_KEY>` from backend/.env
@@ -27,7 +33,17 @@ Base URL: https://api.vachana.ai, auth header `X-API-Key-ID: <GNANI_API_KEY>` fr
   Returns binary WAV.
 - Existing client: backend/app/gnani.py (transcribe(), speak() with disk cache keyed by
   sha256(text|voice|language|speed); mock audio uses a separate `mock-` prefix). Reuse it.
-  Every spoken phrase goes through speak(). `python -m app.tts_warm` lists which fixed phrases
+  Every spoken phrase goes through speak(), as speak(for_voice(text, lang), ...): the Hindi voice
+  misreads Roman Hinglish ("dal chawal", Kochi place names), so for_voice swaps each Roman word for
+  its Devanagari spelling (languages/hi_voice.py) while the screen keeps the Roman text. A new
+  Hindi prompt word, dish or name goes in hi_voice.py too (test_hindi_voice fails otherwise).
+  Dish names: Prompts.dish_words writes them in the screen's script (hi: Devanagari -> Roman,
+  ml/kn: Latin -> own script; en and the dashboard: any script -> Roman; languages.screen_dish),
+  in read-backs, offers, the kitchen ticket
+  (dish_shown) and the rail; the stored Report.dish stays as heard. Offers speak whole kilometres
+  (offers.spoken_km: "6.2" is read "6 point 2"). gnani._post retries a 5xx/429/dropped
+  connection once (seen live). Live checks: scratchpad-style scripts drove the whole workflow
+  in all four languages against a second server (own DATABASE_URL, port 8779), 3 Nov. `python -m app.tts_warm` lists which fixed phrases
   are in the live cache (free); `--warm` synthesises the missing ones (spends credits).
 
 ## Rules
@@ -79,6 +95,19 @@ RECORDED -> TRANSCRIBED -> EXTRACTED -> CONFIRMING -> CONFIRMED -> SAFETY_CHECK 
   on /reports/{id}/reply, answer=status|yes|no on /reports/{id}/ask, repeat=true on /reports/audio.
   They are logged as "button" events. Live kitchen messages carry volunteer, eta_min, ngo and reason
   so the page can say them in the kitchen's language (kitchen/strings.js).
+- UI v2 friendlier (DESIGN.md "Helping first-timers"): rotating "for example" sentences under the
+  kitchen and shelter mics come from the language packs (report_examples / need_examples, served on
+  /kitchens and /ngos; test_examples runs each through the extractor). Kitchen: today strip
+  (/impact?kitchen_id=), three first-time tips, start/stop tick + vibrate, Bigger text. Volunteer:
+  ring + vibrate + live announcement, "Saying no is fine". Dashboard: "What am I looking at?",
+  map <-> board highlighting. getJson throws on HTTP errors; failureKey(err) picks the message that
+  says what to do next. All new strings in hi, ml, en and kn.
+- UI v2 setting (DESIGN.md "The setting"): kolam dot grid, counter + thali under the kitchen mic, a
+  ticket rail of today's reports (GET /kitchens/{id}/today; "Last report" shows only while it is
+  empty), the volunteer's area map (on a laptop also off duty, beside Start duty and today's numbers)
+  (GET /map, assets/map.js shared with the dashboard, hand-drawn backwaters) and "Your rescues"
+  (recent on /volunteers/{id}/today), the shelter's pinboard, the dashboard's pass shelf.
+  Illustrations (assets/illustrations.svg) only in the home hero and empty states.
 - Volunteer screen: offers carry kitchen_point and ngo.point (synthetic lat/lng) for "Open in maps"
   (a maps pin, never a name search). A late answer to a closed offer is a 409 whose detail has
   taken_by (first name of the volunteer who accepted, if any). GET /volunteers/{id}/today counts that
@@ -110,8 +139,12 @@ RECORDED -> TRANSCRIBED -> EXTRACTED -> CONFIRMING -> CONFIRMED -> SAFETY_CHECK 
 
 ## Demo reset
 POST /admin/seed?confirm=true deletes Report, Offer, Need and Event rows, re-seeds kitchens,
-volunteers and NGOs (seed.py), opens one demo need (seed.demo_need: Karunya Children's Home,
-80 people, any food, ~3 h ahead) and sends `reset` to every page. For Annapurna Mess's
+volunteers and NGOs (seed.py), adds a synthetic day so far (demo_history.py: 4 finished
+rescues and 2 on the way today, 2 yesterday, with their needs, offers and events; no speech
+calls; history=false skips it), opens one demo need (seed.demo_need: Karunya Children's Home,
+80 people, any food, ~3 h ahead) and sends `reset` to every page. The history never waits
+for a volunteer, holds no pending offer and leaves no other open need, so the live demo
+below is unchanged (test_demo_history). For Annapurna Mess's
 50 plates the ranking is Anjali Menon then John Mathew (Rahul 40 and Arjun 30 too small,
 Deepa off duty), so the demo shows the fallback when Anjali says nahi. The TTS cache is kept.
 
@@ -120,7 +153,7 @@ main.py routes · gnani.py / mock.py / audio.py speech I/O · languages/ one pac
 (word lists + prompts) · extractor.py, confirm.py report understanding and read-back ·
 safety.py · repeat.py · intents.py + ask.py kitchen questions · need_extractor.py + needs.py ·
 matcher.py + offers.py (OfferEngine) · ws.py hub · dashboard.py + changes.py · impact.py,
-cards.py, textdraw.py · eval_summary.py · seed.py · tts_warm.py. Tests: backend/tests (pytest, mock mode,
+cards.py, textdraw.py · eval_summary.py · seed.py, demo_history.py · tts_warm.py. Tests: backend/tests (pytest, mock mode,
 temp DB via conftest.py). Accuracy eval: eval/run_eval.py -> eval/RESULTS.md.
 
 ## Data model

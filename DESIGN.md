@@ -24,8 +24,13 @@ trustworthy; never cute, never corporate.
 | `--rice` | `#FAFAF7` | Page background |
 | `--paper` | `#FFFFFF` | KOT slip surface |
 | `--ink` | `#17261C` | Body text |
-| `--leaf-deep` | `#17462A` | Hover on leaf buttons only |
-| `--mirchi-deep` | `#A82618` | Hover on mirchi buttons only |
+| `--leaf-hover` | `#17462A` | Hover on leaf buttons only |
+| `--mirchi-hover` | `#A82618` | Hover on mirchi buttons only |
+| `--leaf-deep` | `#143D23` | Dark leaf in large illustrated areas only (the hero's banana leaf) |
+| `--counter` | `#E9ECEA` | The stainless counter the mic stands on; the dashboard's pass shelf |
+| `--counter-edge` | `#C3C9CE` | The counter's top edge, the shelf lip, thali rings |
+| `--rail` | `#8A949C` | The ticket rail bar, its clips, pins |
+| `--water` | `#A8C3D1` | Backwaters and the sea edge, on maps only |
 
 Every colour in every stylesheet is one of these tokens (a test checks it).
 
@@ -57,6 +62,7 @@ AA needs 4.5:1 for body text, and 3:1 for large text (24px, or 18.7px bold), ico
 | mirchi on mirchi-soft | 4.6 | everything (just) |
 | steel-dark on rice / paper | 5.3 / 5.5 | everything |
 | steel-dark on haldi-soft / leaf-soft | 5.0 / 4.7 | everything |
+| ink / steel-dark on counter | 13.3 / 4.6 | everything |
 | steel-dark on steel | 3.9 | large text and icons only (disabled buttons; WCAG exempts inactive controls) |
 | **white on haldi, haldi on paper** | **2.0** | **never** |
 | **steel on paper** | **1.4** | **decoration only** |
@@ -126,6 +132,121 @@ glanced at on a scooter. They put `class="reading-far"` on `<body>`, which raise
 - **Respect `prefers-reduced-motion`:** `design.css` shortens every animation and removes the pulse.
 - **Animate transforms and opacity, not size:** the speaking bars scale (`scaleY`), they don't
   change `height`, so they cost no layout.
+
+## The setting
+
+Each screen is a place in a kitchen, kept quiet so the KOT slip and the mic stay the brightest
+things on screen. Solid fills only: no gradient washes, no glassmorphism.
+
+- **Kolam dot grid** on every page background: 2px dots of `--steel-dark` at 35%, 24px apart
+  (`--kolam-dot`, `--kolam-step`). The dots cover under 1% of the page, so text on it keeps its
+  contrast (axe checks every screen).
+- **Kolam loops** (`.kolam`, the `kolam` drawing): `--steel-dark` at 30%, in one corner of the home
+  hero and of empty states. Always in the corner beside the illustration, never behind text. The
+  hero's loops are hidden on phones, where they would sit under the words.
+- **The counter** (`.counter`): the mic stands on it. On the kitchen phone screen it runs edge to edge
+  and fills the lower 55% of the screen, shrinking to a strip with the small mic while a ticket is
+  open. On a tablet it is the left column.
+- **The thali** (`.thali`): two `--counter-edge` rings round the mic; the haldi level ring moves
+  inside them.
+- **The ticket rail** (`.rail-wrap`, `.rail`): a 6px `--rail` bar, each ticket hanging from a clip.
+  It shows the kitchen's reports today as mini slips, newest first, scrolling sideways. Empty, it
+  says "Today's reports will hang here."
+- **The pinboard** (`.pinboard`, `.pinned`): a `--leaf-soft` board for the shelter's requests.
+  Pinned slips are white paper with a 4px leaf band under a steel pin, so a leaf-soft need slip
+  doesn't vanish into the board.
+- **The pass shelf:** the dashboard's lane headings are a `--counter` strip with a `--counter-edge`
+  lip; the lane colour is the thin line on top. Slips sit below on the dots.
+- **Maps** (`/assets/map.js`, shared by the dashboard and the volunteer screen): dots by lat/lng, with
+  backwaters and the sea edge drawn by hand in `--water`, thin and light so they never read as roads.
+  The volunteer's own dot pulses gently (not under reduced motion).
+
+### Illustrations (`/assets/illustrations.svg`)
+
+Banana leaf (and `banana-leaf-tall`, the same leaf upright), steel tiffin, scooter with a delivery
+bag, shelter, thali, and the kolam. They are flat, use 2-3 palette colours each (the design tokens,
+as CSS variables), and have rounded 2px strokes.
+
+**Use them only in:** the home hero, empty states (`.empty-state`), and the volunteer's "no rescues
+yet". A test checks it.
+
+The home hero is the one bold image in the product: the self-writing slip lies on a large upright
+banana leaf (`--leaf`, `--leaf-deep` veins), turned 2.5°, with a tiffin below it. The leaf stays
+inside the hero's own box, never over the quote or the caption.
+
+### Mini slip
+
+`renderMiniKot(report, { words, word })` in `kot.js` draws a small ticket: number, amount and dish,
+status pill. It's static, with no countdown or write-in. Used on the kitchen's rail and in the
+volunteer's "Your rescues", where the last three are fanned like slips on a spike.
+
+## Helping first-timers
+
+The aim: anyone can use each screen within 10 seconds without being told how.
+
+- **"For example:" under a mic** (kitchen and shelter):
+  - the lead-in is in the screen's language, with the English lead-in under it, then one real
+    example that changes every 6 seconds (still under reduced motion);
+  - the examples live in the language packs (`report_examples`, `need_examples`), and a test runs
+    every one through the real extractor, so saying an example word for word always works;
+  - all examples share one grid cell (`.examples`), so the box is as tall as the longest and
+    nothing moves when they change.
+- **First-time tips** (`.tip`, kitchen):
+  - three at most: the mic (below the example, so the first screen shows the mic and what to
+    say), the slip, and the Haan/Nahi buttons;
+  - each appears the first time its target does, with "Got it" and "Hide tips";
+  - they are inline and never a modal, and are remembered on the device;
+  - doing the thing (holding the mic, answering) also counts as "got it".
+- **Feedback without looking:** a soft tick when recording starts (higher) and stops (lower), and a
+  30 ms buzz on phones. A new offer on the volunteer screen rings, vibrates in a phone-call
+  pattern, and is announced in an assertive live region.
+- **"Saying no is fine, we'll ask someone else."** sits above the volunteer's No / Yes.
+- **Bigger text** (kitchen top bar, "A+"): the whole page at 125% (every size is in rem), except the
+  language switch, whose names already fit. Remembered on the device.
+- **"What am I looking at?"** (dashboard): a one-line haldi-soft note over the impact strip and under
+  each lane's shelf. It's on for a first visit until someone turns it off (remembered).
+- **Map and board point at each other:** hovering or focusing a kitchen, shelter or on-duty volunteer
+  dot outlines its slips in leaf and steps the rest back; a slip enlarges its dots. Those dots take
+  focus (with the usual leaf ring) and have names.
+- **Loading is the slip itself:** blank lines breathing (`.is-skeleton`, `renderSkeletonMini()`) on the
+  kitchen rail, "Your rescues" and the dashboard's detail panel. Never a spinner on its own.
+- **Every error says what to do next.** `failureKey(err)` in `shared/common.js` picks one of four:
+  - **offline:** "No internet. Check the Wi-Fi, then …";
+  - **unreachable:** "Can't reach the server. Check the internet and hold the button again.";
+  - **server down:** "The server had a problem. Wait a moment, then …";
+  - **refused:** the server's own reason, then the next step.
+
+  Each screen ends with its own action (hold the button / tap again / press Reset demo again).
+  The dashboard shows them on the page, never in an `alert()`.
+
+## One screen on a laptop
+
+On a laptop or bigger (and at least 600px tall), each app screen is exactly one screen: neither
+the page nor a column scrolls. A phone scrolls as usual. Check the real window sizes, not the
+screen sizes: a 1366x768 laptop leaves about 1366x650 inside the browser, and 1920x1080 at 125%
+scaling about 1536x730. Under 800px tall the screens tighten (smaller mic, side-by-side rows).
+
+- **Home** (1000px and up): the top bar's tabs switch what fills the screen. "Home" (first):
+  headline, live count, the two buttons and the four apps on the left, the slip on its leaf on
+  the right. "How it works", "Built on Gnani AI" (the accuracy table beside the engines) and
+  "About" each have the screen to themselves. On a phone the sections read one after another.
+- **Kitchen:** the mic grows with the window's height and shrinks to fit what is under it. With
+  a ticket open, the conversation (what the app said, the answers, the safety and cancel
+  questions) stands on the counter under a smaller mic with its label beside it, and the ticket
+  has the right column to itself. The tips stand in the ticket column. Under 1000px tall the
+  ticket rail folds to its one line while a report is open; "Last report" hides until it ends.
+- **Volunteer:** on duty, the area map on the left and the day on the right; an offer puts its
+  ticket on the left and the route, the voice and No / Yes on the right.
+- **Shelter:** the two columns fill the height. When the requests don't fit under the mic, the
+  oldest fold to one row (head count, number, status), then step behind "+N more".
+- **Dashboard:** the side column (map, open needs, voice timings) runs the full height beside
+  the impact strip and the board; the map shrinks to fit. A full lane folds its oldest slips to
+  their heading, then shows "+N more"; either "+N more" opens the list in full, scrolling inside
+  itself, until "Show less". A slip's timeline takes over the side column and scrolls inside it.
+
+The fitting is done by small functions that measure and adjust (kitchen fitMic, shelter
+fitRequests, dashboard fitLanes and fitSide), so a longer language, Bigger text or a busier
+day still fits. A column scrolls inside itself only as a last resort.
 
 ## No layout shift
 

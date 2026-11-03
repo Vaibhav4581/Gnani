@@ -259,7 +259,7 @@ def test_admin_seed_resets_demo_data(client):
         s.get(Volunteer, 1).capacity = 1
         s.commit()
     assert client.post("/admin/seed").status_code == 400  # needs confirm=true
-    assert client.post("/admin/seed?confirm=true").json() == {"ok": True}
+    assert client.post("/admin/seed?confirm=true&history=false").json() == {"ok": True}
     with Session(engine) as s:
         assert s.exec(select(Report)).first() is None
         assert s.exec(select(Event)).first() is None

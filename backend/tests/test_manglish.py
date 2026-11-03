@@ -112,9 +112,9 @@ def test_unknown_latin_dish_is_spoken_as_is():
     assert "pasta" in next_prompt(Extraction("pasta", 5, "kg", T(14)), ML)
 
 
-def test_other_languages_keep_latin_dish_names():
-    assert next_prompt(FULL, get_language("hi-IN")).startswith("50 plate biryani")
-    assert next_prompt(FULL, get_language("kn-IN")).startswith("50 ಪ್ಲೇಟ್ biryani")
+def test_hindi_keeps_latin_dish_names_and_kannada_writes_its_own():
+    assert next_prompt(FULL, get_language("hi-IN")).startswith("50 plate biryani")  # Hinglish screen
+    assert next_prompt(FULL, get_language("kn-IN")).startswith("50 ಪ್ಲೇಟ್ ಬಿರಿಯಾನಿ")  # kn.SPOKEN_DISH
 
 
 @pytest.mark.parametrize("text,dish,quantity,cooked,location", [

@@ -133,3 +133,11 @@ def test_rescue_without_a_done_event_is_dated_by_its_report(s):
     log_event(s, r.id, "status", status="PICKED_UP")
     s.commit()
     assert impact.impact(s, NOW)["today"]["meals"]["total"] == 5
+
+
+def test_impact_for_one_kitchen(client):
+    everyone = client.get("/impact").json()["all_time"]
+    one = client.get("/impact?kitchen_id=1").json()["all_time"]
+    nobody = client.get("/impact?kitchen_id=999").json()["all_time"]
+    assert one["rescues"] <= everyone["rescues"] and nobody["rescues"] == 0
+    assert nobody["meals"]["total"] == 0
