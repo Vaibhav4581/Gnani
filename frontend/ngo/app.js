@@ -1,8 +1,9 @@
 // NGO screen: the shelter coordinator asks for food by voice (read back as a need slip, confirmed
 // by voice or button), follows the food on its way as tickets (soonest first, with the volunteer
 // and ETA), and answers "Khana aa gaya?" on the arriving ticket by voice or with Haan / Nahi.
+// Both mics are tap to talk, and open by themselves after those two yes/no questions.
 import { $, failureKey, getJson, liveSocket, postJson, rotateExamples, store, stored } from "/shared/common.js";
-import { Microphone, bindHoldToTalk, extensionFor } from "/shared/recorder.js";
+import { LISTEN, Microphone, bindTapToTalk, elapsed, extensionFor } from "/assets/recorder.js";
 import { clearKotNotes, clock, renderKot, renderNeedSlip, setKotNote, setKotRoute, setKotStatus,
          updateNeedSlip } from "/assets/kot.js";
 import { STRINGS, fill, strings } from "./strings.js";
@@ -18,9 +19,13 @@ const state = {
   needSlip: null,
   delivery: null,  // the arriving food's question: { report_id, text, audio_url, language }
   busy: false, audioUrl: null,
+  asked: null,     // the yes/no question just spoken: "need" (the read-back) | "delivery" | null
 };
 let socket = null;
 let talk = null;
+let arrivalTalk = null;
+let listenTimer = null;  // opens the right mic just after a yes/no question has been spoken
+let micClock = null;     // the timer beside "Bol dijiye…" / "Sun rahe hain…"
 let stopExamples = () => {};
 let refresh = null;
 const player = new Audio();
@@ -37,16 +42,16 @@ async function init() {
   const mic = new Microphone({ select: $("mic"), row: $("mic-row") });
   const problem = (message, code) => notice(fill(state.t.notice[code] || state.t.notice.server,
                                                  { what: message }), "error");
-  talk = bindHoldToTalk($("talk"), {
+  talk = bindTapToTalk($("talk"), {
     mic, allowSilence: () => state.mock, onProblem: problem,
     onLevel: (v) => $("talk").style.setProperty("--level", v.toFixed(2)),
-    onStart: () => recording($("talk"), "talk-icon", true),
+    onStart: (mode) => recording($("talk"), "talk-icon", true, mode),
     onStop: () => recording($("talk"), "talk-icon", false),
     onBlob: (blob) => sendNeed({ blob }),
   });
-  bindHoldToTalk($("arrival-talk"), {
+  arrivalTalk = bindTapToTalk($("arrival-talk"), {
     mic, allowSilence: () => state.mock, onProblem: problem,
-    onStart: () => recording($("arrival-talk"), "arrival-talk-icon", true),
+    onStart: (mode) => recording($("arrival-talk"), "arrival-talk-icon", true, mode),
     onStop: () => recording($("arrival-talk"), "arrival-talk-icon", false),
     onBlob: (blob) => answerDelivery({ blob }),
   });
@@ -55,10 +60,26 @@ async function init() {
   on("confirm-yes", () => sendNeed({ answer: "yes" }));
   on("confirm-no", () => sendNeed({ answer: "no" }));
   on("more", resetNeed);
-  on("replay", () => play(state.audioUrl));
+  on("replay", () => play(state.audioUrl, readingBack() ? "need" : null));
   on("arrival-yes", () => answerDelivery({ answer: "yes" }));
   on("arrival-no", () => answerDelivery({ answer: "no" }));
-  on("arrival-replay", () => play(state.delivery?.audio_url));
+  on("arrival-replay", () => play(state.delivery?.audio_url, "delivery"));
+  // Never record while the app speaks; once a yes/no question has been spoken, listen for it.
+  player.addEventListener("playing", () => {
+    for (const id of ["talk", "arrival-talk"]) $(id).disabled = true;
+  });
+  for (const ev of ["ended", "pause", "error"]) {
+    player.addEventListener(ev, () => {
+      for (const id of ["talk", "arrival-talk"]) $(id).disabled = state.busy;
+    });
+  }
+  player.addEventListener("ended", () => {
+    listenTimer = setTimeout(() => {
+      if (!player.ended || state.busy) return;
+      if (state.asked === "delivery" && state.delivery) arrivalTalk.listen();
+      else if (state.asked === "need" && readingBack()) talk.listen();
+    }, LISTEN.AFTER_VOICE_MS);
+  });
   on("ngo-btn", openSheet);
   on("mock-send", () => {
     const blob = new Blob([], { type: "audio/webm" });
@@ -183,7 +204,8 @@ async function sendNeed({ blob = null, answer = null } = {}) {
   hideNotice();
   try {
     const data = await postJson(url, { body: form });
-    play(data.audio_url);
+    const readBack = data.status === "CONFIRMING" && !(data.missing || []).length;
+    play(data.audio_url, readBack ? "need" : null);  // "…Sahi hai?"; a follow-up waits for a tap
     await showNeed(data);
     if (data.status === "OPEN") loadNeeds();
     $("latency").textContent = Object.entries(data.latency_ms || {})
@@ -243,7 +265,7 @@ function onMessage(msg) {
     loadNeeds();
   } else if (msg.type === "delivery_check") {
     state.delivery = msg;
-    play(msg.audio_url);
+    play(msg.audio_url, "delivery");
     loadNeeds();
   }
 }
@@ -379,7 +401,7 @@ async function answerDelivery({ blob = null, answer = null } = {}) {
   setBusy(true);
   try {
     const data = await postJson(`/reports/${d.report_id}/delivery-reply`, { body: form });
-    play(data.audio_url);
+    play(data.audio_url, data.unclear ? "delivery" : null);  // "haan ya nahi?" asks again
     if (data.unclear) {
       notice(data.text, "attention");
       return;
@@ -414,11 +436,21 @@ function say(text, language) {
   $("say-text").lang = (language || state.ngo.language).split("-")[0];
 }
 
-function play(url) {
+// `asked`: the yes/no question this audio asks, so the mic opens once it has been said.
+function play(url, asked = null) {
   if (!url) return;
+  talk?.cancel();  // never record while the app speaks: it would hear itself
+  arrivalTalk?.cancel();
+  clearTimeout(listenTimer);
+  state.asked = asked;
   state.audioUrl = url;
   player.src = url;
   player.play().catch(() => { /* autoplay blocked: the replay buttons work */ });
+}
+
+// The need has been read back in full and waits for "haan" or a correction.
+function readingBack() {
+  return state.need?.status === "CONFIRMING" && !state.need.missing.length;
 }
 
 function updateMic() {
@@ -426,21 +458,30 @@ function updateMic() {
   const confirming = state.need?.status === "CONFIRMING";
   const label = state.busy ? m.sending : confirming ? m.reply : m.ask;
   if (!talk?.isRecording()) $("talk-label").textContent = label;
-  // idle: "Hold the button and say what you need, for example: ..." instead of the plain hint
+  // idle: "Tap the button and say what you need, for example: ..." instead of the plain hint
   const idle = !state.busy && !confirming && !talk?.isRecording();
   $("example-box").hidden = !idle;
   $("ask-hint").hidden = idle;
 }
 
-function recording(button, iconId, on) {
+// mode: "tap" or "auto" (opened after a question: "Sun rahe hain…").
+function recording(button, iconId, on, mode = "tap") {
   button.classList.toggle("is-recording", on);
   $(iconId).setAttribute("href", `${ICONS}#${on ? "stop" : "mic"}`);
-  if (button.id === "talk") {
-    $("talk-label").textContent = on ? state.t.mic.recording : "";
-    if (!on) {
-      button.style.setProperty("--level", "0");
-      updateMic();
-    }
+  clearInterval(micClock);
+  const word = mode === "auto" ? state.t.mic.listening : state.t.mic.recording;
+  const label = button.id === "arrival-talk" ? $("arrival-hold") : $("talk-label");
+  if (on) {
+    const since = performance.now();
+    const show = () => { label.textContent = `${word} ${elapsed(since)}`; };
+    show();
+    micClock = setInterval(show, 250);
+  }
+  if (button.id === "arrival-talk" && !on) $("arrival-hold").textContent = state.t.arrival.hold;
+  if (button.id === "talk" && !on) {
+    $("talk-label").textContent = "";
+    button.style.setProperty("--level", "0");
+    updateMic();
   }
 }
 

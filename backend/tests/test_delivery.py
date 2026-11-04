@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 from app import main
 from app.db import engine
 from app.main import app
-from app.models import Event, Need, NeedStatus, Offer, Report, ReportStatus
+from app.models import Event, Need, NeedStatus, Ngo, Offer, Report, ReportStatus
 from app.offers import OfferStatus
 
 from .conftest import NOW  # 4 pm
@@ -98,7 +98,7 @@ def test_missing_people_count_is_asked_for(client):
 
 def test_ngos_listed(client):
     ngos = client.get("/ngos").json()
-    assert [n["language"] for n in ngos] == ["hi-IN", "ml-IN", "en-IN"]
+    assert [n["language"] for n in ngos] == ["hi-IN", "ml-IN", "en-IN", "ml-IN"]  # 4: the drop point
     assert client.get("/ngo/").status_code == 200
 
 
@@ -144,19 +144,60 @@ def test_kitchen_to_volunteer_to_ngo_to_delivered(client):
     assert any(x.startswith("NGO confirmed delivery") for x in texts)
 
 
-def test_no_fitting_need_falls_back_to_pickup_only(client):
+DROP_OFF = "Drop-off: Vyttila Community Kitchen (no specific request open)"
+
+
+def test_no_fitting_need_goes_to_the_default_drop_point(client):
+    """No open need fits, so the volunteer is still given a destination: the seeded
+    default drop point. The rescue ends at pickup, as before; the hand-over is logged."""
     open_need(client, 3, "We need food for 80 people by 7 pm, vegetarian only")
     with client.websocket_connect("/ws/volunteer/7") as john:
         rid = confirm_report(client, veg="nahi, non-veg hai")  # can't go to a veg-only need
         offer = next_of(john, "offer")
-        assert offer["summary"]["ngo"] is None and "deliver" not in offer["text"]
-        client.post(f"/offers/{offer['offer_id']}/decline")
-    assert "no_need_match" in events(rid)
+        drop = offer["summary"]["ngo"]
+        assert (drop["name"], drop["drop_off"], drop["people"]) == ("Vyttila Community Kitchen", True, None)
+        assert drop["point"] == [9.9673, 76.3183] and drop["total_km"] > drop["distance_km"] > 0
+        assert ("Drop-off: Vyttila Community Kitchen in Vyttila (no specific request open)"
+                in offer["text"])
+        assert client.post(f"/offers/{offer['offer_id']}/accept").status_code == 200
+    assert {"no_need_match", "drop_point"} <= set(events(rid))
     with Session(engine) as s:
-        assert s.get(Report, rid).need_id is None
+        report = s.get(Report, rid)
+        assert report.need_id is None and s.get(Ngo, report.drop_ngo_id).is_default
     board = client.get("/dashboard/board").json()
-    assert any(n["veg_only"] and n["status"] == "OPEN" for n in board["needs"])
-    assert client.post(f"/reports/{rid}/delivered").status_code == 409  # no NGO: ends at pickup
+    assert any(n["veg_only"] and n["status"] == "OPEN" for n in board["needs"])  # untouched
+    card = next(c for c in board["cards"] if c["id"] == rid)
+    assert (card["ngo"], card["drop_off"], card["ngo_id"]) == ("Vyttila Community Kitchen", True,
+                                                               report.drop_ngo_id)
+    detail = client.get(f"/dashboard/reports/{rid}").json()
+    assert detail["need"] is None and detail["drop_off"]["text"] == DROP_OFF
+    assert any(e["text"] == DROP_OFF for e in detail["entries"])
+
+    assert client.post(f"/reports/{rid}/delivered").status_code == 409  # not picked up yet
+    assert client.post(f"/reports/{rid}/picked-up?by=volunteer").status_code == 200
+    for _ in range(2):  # repeating it is harmless
+        done = client.post(f"/reports/{rid}/delivered").json()
+        assert (done["status"], done["dropped_off"], done["asked"]) == ("PICKED_UP", True, False)
+    assert events(rid).count("dropped_off") == 1
+    card = next(c for c in client.get("/dashboard/board").json()["cards"] if c["id"] == rid)
+    assert card["lane"] == "delivered"
+    assert card["badge"] == "Dropped off at Vyttila Community Kitchen by John Mathew"
+
+
+def test_a_need_that_opens_later_replaces_the_drop_point(client):
+    """Food waiting for a volunteer goes to a fitting need confirmed in the meantime."""
+    rid = confirm_report(client)  # nobody on duty: it waits, headed for the drop point
+    with Session(engine) as s:
+        assert s.get(Report, rid).drop_ngo_id is not None
+    open_need(client, 3, "We need food for 80 people by 7 pm")
+    with client.websocket_connect("/ws/volunteer/7") as john:
+        offer = next_of(john, "offer")
+        assert offer["summary"]["ngo"]["name"] == "Karunya Children's Home"
+        assert offer["summary"]["ngo"]["drop_off"] is False
+        client.post(f"/offers/{offer['offer_id']}/decline")
+    with Session(engine) as s:
+        report = s.get(Report, rid)
+        assert report.need_id is not None and report.drop_ngo_id is None
 
 
 # ---------------------------------------------------------------- delivery replies

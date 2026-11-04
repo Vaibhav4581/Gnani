@@ -4,7 +4,8 @@ CONFIRMED -> SAFETY_CHECK -> MATCHING -> OFFERED -> ASSIGNED. Food is only offer
 the kitchen has said it is covered (safety.py); this engine refuses anything else.
 Before the first offer the report is
 matched to an open NGO need if one fits (matcher.rank_needs); then every route runs
-volunteer -> kitchen -> NGO. With no fitting need, the food is only picked up.
+volunteer -> kitchen -> NGO. With no fitting need, the food goes to the default drop
+point (Ngo.is_default) instead, so the volunteer always has a destination.
 A "no" or no answer within
 OFFER_TIMEOUT_SECONDS moves on to the next-ranked volunteer. Everything runs on
 the server's event loop, and one lock per report makes accept, decline and
@@ -31,7 +32,7 @@ from .db import log_event
 from .languages import Language, for_voice, get_language, screen_dish, script_of
 from .matcher import Candidate, NeedMatch, rank_needs, rank_volunteers
 from .models import Event, Kitchen, Need, NeedStatus, Ngo, Offer, Report, ReportStatus, Volunteer
-from .needs import open_needs, refresh_needs
+from .needs import default_drop_point, open_needs, refresh_needs
 from .seed import nearest_area
 from .ws import Hub
 
@@ -73,6 +74,14 @@ class Job:
     # which could land on a real business with the same name).
     kitchen_point: Optional[tuple[float, float]] = None
     ngo_point: Optional[tuple[float, float]] = None
+    # No need fitted: ngo_* describe the default drop point, with no people or needed-by.
+    drop_off: bool = False
+
+
+def to_drop_point(job: Job, ngo: Ngo) -> Job:
+    """The food goes to the default drop point (no specific request open there)."""
+    return replace(job, ngo_id=ngo.id, ngo_name=ngo.name, ngo_area=nearest_area(ngo.lat, ngo.lng),
+                   ngo_point=(ngo.lat, ngo.lng), drop_off=True)
 
 
 @dataclass(frozen=True)
@@ -119,9 +128,11 @@ def alert_text(job: Job, distance_km: float, lang: Language) -> str:
                   deadline=p.by_time(job.deadline), safety=food_safety_text(job, lang))
     if not job.ngo_name:
         return lang.offer.alert.format(**fields)
-    ngo = job.ngo_name if script_of(job.ngo_name) in lang.scripts else lang.offer.shelter_word
-    return lang.offer.alert_delivery.format(
-        ngo=ngo, ngo_area=p.area_names.get(job.ngo_area, job.ngo_area), **fields)
+    o = lang.offer
+    readable = script_of(job.ngo_name) in lang.scripts
+    ngo = job.ngo_name if readable else o.drop_word if job.drop_off else o.shelter_word
+    template = o.alert_drop if job.drop_off else o.alert_delivery
+    return template.format(ngo=ngo, ngo_area=p.area_names.get(job.ngo_area, job.ngo_area), **fields)
 
 
 def food_safety_text(job: Job, lang: Language) -> str:
@@ -251,10 +262,11 @@ class OfferEngine:
                                                                        volunteers)
             need = s.get(Need, report.need_id) if report.need_id else None
             ngo = s.get(Ngo, need.ngo_id) if need else None
+            drop = None if need else self._drop_point(s, report)
             busy = set(s.exec(select(Offer.volunteer_id).where(
                 Offer.status == OfferStatus.PENDING)).all())
             chosen = None
-            ranked = rank_volunteers(report, kitchen, volunteers, self.clock(), ngo=ngo,
+            ranked = rank_volunteers(report, kitchen, volunteers, self.clock(), ngo=ngo or drop,
                                      needed_by=need.needed_by if need else None)
             for c in ranked:
                 vid = c.volunteer.id
@@ -275,8 +287,19 @@ class OfferEngine:
                 job = replace(job, need_id=need.id, ngo_id=ngo.id, ngo_name=ngo.name,
                               ngo_area=nearest_area(ngo.lat, ngo.lng), needed_by=need.needed_by,
                               people=need.people_count, ngo_point=(ngo.lat, ngo.lng))
+            elif drop:
+                job = to_drop_point(job, drop)
             s.commit()
         return job, chosen, need_matched
+
+    @staticmethod
+    def _drop_point(s: Session, report: Report) -> Optional[Ngo]:
+        """No need fits: the default drop point, recorded on the report the first time."""
+        drop = default_drop_point(s)
+        if drop is not None and report.drop_ngo_id != drop.id:
+            report.drop_ngo_id = drop.id
+            log_event(s, report.id, "drop_point", ngo_id=drop.id, ngo=drop.name)
+        return drop
 
     def _match_need(self, s: Session, report: Report, kitchen: Kitchen,
                     volunteers: list[Volunteer]) -> bool:
@@ -297,6 +320,7 @@ class OfferEngine:
             return False
         m: NeedMatch = matches[0]
         report.need_id = m.need.id
+        report.drop_ngo_id = None
         m.need.status = NeedStatus.MATCHED
         changes.mark_needs(s)
         log_event(s, report.id, "need_matched", need_id=m.need.id, ngo_id=m.ngo.id,
@@ -535,7 +559,7 @@ class OfferEngine:
                                                    "status": status, "text": text, **extra})
 
     async def _tell_ngo(self, job: Job, status: str, text: str, **extra: str) -> None:
-        if job.ngo_id is not None:
+        if job.need_id is not None:  # the drop point has no request to update
             await self.hub.to_ngo(job.ngo_id, {"type": "need", "need_id": job.need_id,
                                                "report_id": job.report_id, "status": status,
                                                "text": text, **extra})
@@ -552,7 +576,7 @@ class OfferEngine:
     def _ngo_summary(job: Job, cand: Candidate) -> Optional[dict]:
         if not job.ngo_name:
             return None
-        return {"name": job.ngo_name, "area": job.ngo_area,
+        return {"name": job.ngo_name, "area": job.ngo_area, "drop_off": job.drop_off,
                 "distance_km": round(cand.delivery_km, 1), "total_km": round(cand.total_km, 1),
                 "needed_by": job.needed_by.isoformat() if job.needed_by else None,
                 "people": job.people,

@@ -1002,9 +1002,33 @@ def _claim_delivery(report_id: int, by: str) -> tuple[Report, Need, Ngo, Languag
     return report, need, ngo, lang
 
 
+def _drop_off(report_id: int, by: str) -> Optional[dict]:
+    """Food taken to the default drop point (no need): nobody there confirms it, so the
+    hand-over is only logged. The rescue was finished at pickup and stays PICKED_UP.
+    None: not a drop-point report."""
+    with Session(engine) as s:
+        report = s.get(Report, report_id)
+        if report is None or report.need_id is not None or report.drop_ngo_id is None:
+            return None
+        if report.status != ReportStatus.PICKED_UP:
+            raise HTTPException(409, f"Report is {report.status.value}; it must be picked up first")
+        ngo = s.get(Ngo, report.drop_ngo_id)
+        done = s.exec(select(Event.id).where(Event.report_id == report.id,
+                                             Event.type == "dropped_off")).first()
+        if done is None:
+            log_event(s, report.id, "dropped_off", by=by, ngo=ngo.name)
+            s.commit()
+        return {"report_id": report.id, "status": report.status.value, "asked": False,
+                "dropped_off": True, "ngo": ngo.name}
+
+
 @app.post("/reports/{report_id}/delivered")
 async def report_delivered(report_id: int, by: str = "volunteer") -> dict:
-    """The volunteer has handed the food over: the NGO page asks "Khana aa gaya?"."""
+    """The volunteer has handed the food over: the NGO page asks "Khana aa gaya?".
+    At the default drop point there is no request to confirm: logged only (_drop_off)."""
+    dropped = await run_in_threadpool(_drop_off, report_id, by)
+    if dropped is not None:
+        return dropped
     report, need, ngo, lang = await run_in_threadpool(_claim_delivery, report_id, by)
     if report.status == ReportStatus.DELIVERED:
         return {"report_id": report.id, "status": report.status.value, "asked": False}

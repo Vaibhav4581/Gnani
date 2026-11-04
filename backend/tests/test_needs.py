@@ -245,7 +245,11 @@ def test_old_database_gets_the_new_report_columns(tmp_path):
     with eng.begin() as conn:
         conn.exec_driver_sql("CREATE TABLE report (id INTEGER PRIMARY KEY, kitchen_id INTEGER)")
         conn.exec_driver_sql("INSERT INTO report (id, kitchen_id) VALUES (1, 1)")
-    assert add_missing_columns(eng) == ["report.veg", "report.need_id", "report.covered"]
+        conn.exec_driver_sql("CREATE TABLE ngo (id INTEGER PRIMARY KEY, name VARCHAR)")
+        conn.exec_driver_sql("INSERT INTO ngo (id, name) VALUES (1, 'Asha Night Shelter')")
+    assert add_missing_columns(eng) == ["report.veg", "report.need_id", "report.covered",
+                                        "report.drop_ngo_id", "ngo.is_default"]
     assert add_missing_columns(eng) == []  # second start: nothing to do
     with eng.begin() as conn:
-        assert conn.exec_driver_sql("SELECT id, veg, need_id FROM report").fetchall() == [(1, None, None)]
+        assert conn.exec_driver_sql("SELECT id, veg, need_id, drop_ngo_id FROM report").fetchall() ==             [(1, None, None, None)]
+        assert conn.exec_driver_sql("SELECT is_default FROM ngo").fetchall() == [(0,)]

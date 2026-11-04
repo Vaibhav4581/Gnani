@@ -1,9 +1,10 @@
-// Kitchen screen: hold to talk -> the report writes itself onto a KOT slip -> confirm by voice
-// or button -> two safety questions -> live status on the slip, with a route line. After that
-// the same mic asks "volunteer kab aayega?" or cancels (asked back first). One thing at a time.
-import { $, cue, failureKey, getJson, liveSocket, postJson, putJson, rotateExamples, store,
+// Kitchen screen: tap to talk (it stops when you do) -> the report writes itself onto a KOT slip
+// -> confirm by voice or button -> two safety questions -> live status on the slip, with a route
+// line. After each yes/no question the mic opens by itself. After that the same mic asks
+// "volunteer kab aayega?" or cancels (asked back first). One thing at a time.
+import { $, failureKey, getJson, liveSocket, postJson, putJson, rotateExamples, store,
          stored } from "/shared/common.js";
-import { Microphone, bindHoldToTalk, extensionFor } from "/shared/recorder.js";
+import { LISTEN, Microphone, bindTapToTalk, extensionFor } from "/assets/recorder.js";
 import { clearKotNotes, clock, renderKot, renderMiniKot, renderSkeletonMini, setKotFields, setKotId,
          setKotNote, setKotRoute, setKotSpeaking, setKotStatus } from "/assets/kot.js";
 import { LANG_ORDER, STRINGS, fill, strings } from "./strings.js";
@@ -32,6 +33,7 @@ const state = {
 let talk = null;
 let socket = null;
 let timer = null;
+let listenTimer = null;  // opens the mic just after a yes/no question has been spoken
 let stopExamples = () => {};
 
 // Bigger text before anything draws, so the page doesn't jump.
@@ -47,15 +49,14 @@ async function init() {
   $("settings").open = state.mock;  // the demo types instead of speaking
 
   const mic = new Microphone({ select: $("mic"), row: $("mic-row") });
-  talk = bindHoldToTalk($("talk"), {
+  talk = bindTapToTalk($("talk"), {
     mic,
     onLevel: (v) => $("talk").style.setProperty("--level", v.toFixed(2)),
     allowSilence: () => state.mock,
     onStart: recordingStarted,
     onStop: recordingStopped,
     onBlob: (blob) => send({ blob }),
-    onProblem: (message, code) => showNotice(code === "blocked" ? "blocked" : code || "server",
-                                             { what: message }),
+    onProblem: (message, code) => showNotice(code || "server", { what: message }),
   });
 
   const on = (id, fn) => $(id).addEventListener("click", fn);
@@ -138,7 +139,7 @@ function applyLanguage() {
   drawLanguages();
   applyStrings();
   resetReport();
-  // "Hold the button and say what's left, for example:" in this kitchen's language
+  // "Tap the button and say what's left, for example:" in this kitchen's language
   stopExamples();
   stopExamples = rotateExamples($("examples"), k.examples || [], { lang: k.language.split("-")[0] });
   $("example-lead").textContent = state.t.example;
@@ -599,13 +600,29 @@ function say(text, language) {
 
 function play(url) {
   if (!url) return;
+  talk?.cancel();  // never record while the app speaks: it would hear itself
+  clearTimeout(listenTimer);
   state.audioUrl = url;
   state.audio?.pause();
   const audio = new Audio(url);
   state.audio = audio;
   audio.addEventListener("playing", () => setSpeaking(true));
   for (const ev of ["ended", "pause", "error"]) audio.addEventListener(ev, () => setSpeaking(false));
+  audio.addEventListener("ended", () => {
+    listenTimer = setTimeout(() => {
+      if (state.audio === audio && !state.busy && !state.speaking && askedYesNo()) talk?.listen();
+    }, LISTEN.AFTER_VOICE_MS);
+  });
   audio.play().catch(() => setSpeaking(false));  // autoplay blocked: the replay button stays
+}
+
+// The app has just asked a yes/no question: the read-back ("…Sahi hai?", nothing missing),
+// a safety question, or "cancel karein?". A follow-up like "kitne baje bana tha?" waits for a tap.
+function askedYesNo() {
+  const r = state.report;
+  if (!r) return false;
+  if (state.cancelAsked || r.status === "SAFETY_CHECK") return true;
+  return r.status === "CONFIRMING" && !r.missing.length;
 }
 
 // While the app speaks: a speaker on the ticket, and the mic waits.
@@ -633,14 +650,15 @@ function updateMic() {
   $("mic-hint").textContent = state.busy || state.speaking || idle ? "" : mode === "ask" ? t.hint.ask : "";
 }
 
-function recordingStarted() {
-  cue("start");
+// mode: "tap" (they tapped) or "auto" (the mic opened after a question: "Sun rahe hain…").
+function recordingStarted(mode) {
   tipDone("mic");
   $("tip").hidden = true;
   $("talk").classList.add("is-recording");
   $("talk-icon").setAttribute("href", `${ICONS}#stop`);
-  $("talk-label").textContent = state.t.mic.recording;
-  $("mic-caption").textContent = state.t.mic.recording;
+  const word = mode === "auto" ? state.t.mic.listening : state.t.mic.recording;
+  $("talk-label").textContent = word;
+  $("mic-caption").textContent = word;
   $("mic-hint").textContent = "";
   const started = Date.now();
   const tick = () => {
@@ -654,7 +672,6 @@ function recordingStarted() {
 }
 
 function recordingStopped() {
-  cue("stop");
   clearInterval(timer);
   $("timer").hidden = true;
   $("talk").classList.remove("is-recording");

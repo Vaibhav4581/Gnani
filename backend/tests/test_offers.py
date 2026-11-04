@@ -10,7 +10,9 @@ from app.db import engine as db
 from app.db import init_db
 from app.languages import get_language
 from app.models import Event, Offer, Report, ReportStatus
-from app.offers import Job, OfferEngine, OfferStatus, alert_text, classify_answer, spoken_km
+from app.offers import (Job, OfferEngine, OfferStatus, alert_text, classify_answer, spoken_km,
+                        to_drop_point)
+from app.seed import NGOS
 
 from .conftest import NOW
 
@@ -257,3 +259,21 @@ def test_alert_spells_a_known_latin_dish_in_the_volunteers_script():
     ml = alert_text(JOB, 3.47, get_language("ml-IN"))
     assert "വെജ് ബിരിയാണി" in ml and "veg biryani" not in ml
     assert "കാക്കനാട്" in ml  # place name in Malayalam script
+
+
+DROP = to_drop_point(JOB, next(n for n in NGOS if n.is_default))
+
+
+@pytest.mark.parametrize("code, says", [
+    ("en-IN", "Drop-off: Vyttila Community Kitchen in Vyttila (no specific request open), "
+              "4 kilometres in total."),
+    ("hi-IN", "Drop-off: Vyttila Community Kitchen, Vyttila (abhi koi khaas maang nahi hai)."),
+    ("ml-IN", "ഡ്രോപ്പ്-ഓഫ്: കമ്മ്യൂണിറ്റി കിച്ചൺ, വൈറ്റില (ഇപ്പോൾ പ്രത്യേക ആവശ്യം ഒന്നുമില്ല)."),
+    ("kn-IN", "ಡ್ರಾಪ್-ಆಫ್: ಸಮುದಾಯ ಅಡುಗೆಮನೆ, ವೈಟ್ಟಿಲ (ಈಗ ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ಬೇಡಿಕೆ ಇಲ್ಲ)."),
+])
+def test_alert_names_the_default_drop_point(code, says):
+    """Malayalam and Kannada voices can't read the Latin name: "community kitchen" instead
+    (not "the shelter", which it isn't)."""
+    text = alert_text(DROP, 4.2, get_language(code))
+    assert says in text
+    assert get_language(code).offer.shelter_word not in text

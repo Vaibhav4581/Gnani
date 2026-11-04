@@ -121,7 +121,7 @@ glanced at on a scooter. They put `class="reading-far"` on `<body>`, which raise
   appended to buttons.
 - **Buttons say exactly what happens:** "Send report", "Yes, I'll pick it up".
 - **Errors say what happened and what to do,** without apologising: "No speech heard. Check that this
-  microphone is switched on, then hold the button again."
+  microphone is switched on, then tap the button again."
 - **Bilingual where it helps:** the primary language big, English small underneath ("Haan" / "Yes").
 
 ## Motion
@@ -196,7 +196,7 @@ The aim: anyone can use each screen within 10 seconds without being told how.
     say), the slip, and the Haan/Nahi buttons;
   - each appears the first time its target does, with "Got it" and "Hide tips";
   - they are inline and never a modal, and are remembered on the device;
-  - doing the thing (holding the mic, answering) also counts as "got it".
+  - doing the thing (tapping the mic, answering) also counts as "got it".
 - **Feedback without looking:** a soft tick when recording starts (higher) and stops (lower), and a
   30 ms buzz on phones. A new offer on the volunteer screen rings, vibrates in a phone-call
   pattern, and is announced in an assertive live region.
@@ -212,11 +212,11 @@ The aim: anyone can use each screen within 10 seconds without being told how.
   kitchen rail, "Your rescues" and the dashboard's detail panel. Never a spinner on its own.
 - **Every error says what to do next.** `failureKey(err)` in `shared/common.js` picks one of four:
   - **offline:** "No internet. Check the Wi-Fi, then …";
-  - **unreachable:** "Can't reach the server. Check the internet and hold the button again.";
+  - **unreachable:** "Can't reach the server. Check the internet and tap the button again.";
   - **server down:** "The server had a problem. Wait a moment, then …";
   - **refused:** the server's own reason, then the next step.
 
-  Each screen ends with its own action (hold the button / tap again / press Reset demo again).
+  Each screen ends with its own action (tap the button / tap again / press Reset demo again).
   The dashboard shows them on the page, never in an `alert()`.
 
 ## One screen on a laptop
@@ -367,11 +367,20 @@ setKotStatus(slip, "ASSIGNED");
 ```html
 <button class="mic-btn" type="button">
   <svg class="icon" aria-hidden="true"><use href="/assets/icons.svg#mic"/></svg>
-  <span>Hold to report food</span>
+  <span>Tap to report food</span>
 </button>
 ```
 
+- **Tap to talk:** one tap starts; the recording stops by itself about a second after the speaker
+  stops (judged against the room's own noise), and a second tap stops it early. No holding.
 - **Recording:** add `.is-recording` (a haldi fill, ink text and a pulsing ring) and swap to the `stop` icon.
+  The label says what to do: "Bol dijiye… ruk jaane par bhej denge".
+- **Listening by itself:** right after the app asks a yes/no question (the read-back, the safety
+  questions, "cancel karein?", the volunteer's offer, the shelter's read-back and "Khana aa gaya?") the
+  mic opens on its own with a soft tick and "Sun rahe hain…". If nobody answers in 8 s it closes
+  quietly and the Haan / Nahi buttons are still there.
+- **Never while the app speaks:** the mic is disabled while a reply plays, and any sound starting
+  cancels a recording, so the app can't hear itself.
 - **Busy:** `disabled`. It turns steel, and the label stays ink because "Understanding…" is real information.
 
 ### Icons (`/assets/icons.svg`)
@@ -395,8 +404,8 @@ shapes, with non-veg in mirchi rather than the label brown, to stay in the palet
 These live in `design.css` and `kot.js`, so the other screens reuse them rather than redrawing them.
 
 - **`.mic-btn--ring`:** the mic with a haldi ring. While recording, the ring follows the live mic level:
-  set `--level` (0 to 1) on the button. `bindHoldToTalk({ onLevel })` in `shared/recorder.js` supplies
-  it from a Web Audio AnalyserNode.
+  set `--level` (0 to 1) on the button. `bindTapToTalk({ onLevel })` in `assets/recorder.js` supplies
+  it from a Web Audio AnalyserNode (the same reading decides when to stop).
 - **`.seg` / `.seg-btn`:** a segmented control for one choice from a few that stay in view, such as
   the language. Use `role="radiogroup"` on the group, with `role="radio"` and `aria-checked` on each button.
 - **`.conn`:** the connection state as a dot and a word. `data-state` is `live`, `reconnecting` or `offline`.

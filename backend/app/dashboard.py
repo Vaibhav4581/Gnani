@@ -82,13 +82,22 @@ def _ngo_of(s: Session, report: Report) -> Optional[Ngo]:
     return s.get(Ngo, need.ngo_id) if need else None
 
 
+def _drop_of(s: Session, report: Report) -> Optional[Ngo]:
+    """The default drop point, for food that matched no need."""
+    return s.get(Ngo, report.drop_ngo_id) if report.drop_ngo_id and not report.need_id else None
+
+
+def drop_off_text(name: str) -> str:
+    return f"Drop-off: {name} (no specific request open)"
+
+
 def _last_event(s: Session, report_id: int, types: tuple[str, ...]) -> Optional[str]:
     return s.exec(select(Event.type).where(Event.report_id == report_id, Event.type.in_(types))
                   .order_by(Event.id.desc())).first()
 
 
 def _badge(s: Session, report: Report, names: dict[int, str],
-           ngo: Optional[Ngo] = None) -> tuple[str, Optional[str]]:
+           ngo: Optional[Ngo] = None, drop: Optional[Ngo] = None) -> tuple[str, Optional[str]]:
     """Short state line for a card, and the volunteer involved (if any)."""
     status = ReportStatus(report.status)
     if status == ReportStatus.CANCELLED:
@@ -128,6 +137,8 @@ def _badge(s: Session, report: Report, names: dict[int, str],
         if last == "delivery_claimed":
             return f"{who} says delivered; waiting for {ngo.name}", who
         return f"{who} is taking it to {ngo.name}", who
+    if drop is not None and _last_event(s, report.id, ("dropped_off",)):
+        return f"Dropped off at {drop.name} by {who}", who
     return f"Picked up by {who}", who
 
 
@@ -136,7 +147,9 @@ def card(s: Session, report: Report, names: Optional[dict[int, str]] = None) -> 
     kitchen = s.get(Kitchen, report.kitchen_id)
     lang = get_language(kitchen.language if kitchen else None)
     ngo = _ngo_of(s, report)
-    badge, volunteer = _badge(s, report, names, ngo)
+    drop = _drop_of(s, report)
+    to = ngo or drop
+    badge, volunteer = _badge(s, report, names, ngo, drop)
     offers = s.exec(select(Offer).where(Offer.report_id == report.id).order_by(Offer.rank)).all()
     status = ReportStatus(report.status)
     return {
@@ -149,13 +162,14 @@ def card(s: Session, report: Report, names: Optional[dict[int, str]] = None) -> 
         "declined": [{"volunteer": names.get(o.volunteer_id, "?"),
                       "reason": "no" if o.status == "DECLINED" else "timeout"}
                      for o in offers if o.status in ("DECLINED", "EXPIRED")],
-        "ngo": ngo.name if ngo else None,
+        "ngo": to.name if to else None,
+        "drop_off": drop is not None,  # to the default drop point: no specific request open
         # for the map: who is (or is being asked to) carry it, from where to where
-        "kitchen_id": report.kitchen_id, "ngo_id": ngo.id if ngo else None,
+        "kitchen_id": report.kitchen_id, "ngo_id": to.id if to else None,
         "volunteer_id": _carrier(offers, status),
         "veg": report.veg, "covered": report.covered,
         "chain": {"kitchen": kitchen.name if kitchen else "?", "volunteer": volunteer,
-                  "ngo": ngo.name if ngo else None},
+                  "ngo": to.name if to else None},
     }
 
 
@@ -330,8 +344,12 @@ def _entry(e: Event, p: dict, names: dict[int, str]) -> Optional[dict]:
                 "detail": f"{p.get('people')} people · {veg} · by {str(p.get('needed_by'))[11:16]}"
                           f" · {p.get('distance_km')} km from the kitchen"}
     if e.type == "no_need_match":
-        return {"kind": "muted", "text": "No NGO need fits; pickup only",
+        return {"kind": "muted", "text": "No NGO need fits",
                 "detail": f"{p.get('open_needs', 0)} open need(s) checked"}
+    if e.type == "drop_point":
+        return {"kind": "info", "text": drop_off_text(p.get("ngo", "?"))}
+    if e.type == "dropped_off":
+        return {"kind": "good", "text": f"Dropped off at {p.get('ngo')} (marked by {p.get('by', 'staff')})"}
     if e.type == "need_released":
         return {"kind": "warn", "text": "Need released: the food expired before anyone took it"}
     if e.type == "delivery_claimed":
@@ -355,6 +373,11 @@ def _need_summary(s: Session, report: Report) -> Optional[dict]:
             "status": need.status.value}
 
 
+def _drop_summary(s: Session, report: Report) -> Optional[dict]:
+    drop = _drop_of(s, report)
+    return {"ngo": drop.name, "text": drop_off_text(drop.name)} if drop else None
+
+
 def timeline(s: Session, report_id: int) -> Optional[dict]:
     report = s.get(Report, report_id)
     if report is None:
@@ -374,6 +397,7 @@ def timeline(s: Session, report_id: int) -> Optional[dict]:
                    "unit": report.unit, "cooked_at": _iso(report.cooked_at), "location": report.location,
                    "deadline": _iso(report.deadline), "veg": report.veg},
         "need": _need_summary(s, report),
+        "drop_off": _drop_summary(s, report),
         "tried": [{"rank": o.rank, "volunteer": names.get(o.volunteer_id, "?"),
                    "status": o.status, "sent_at": _iso(o.sent_at),
                    "responded_at": _iso(o.responded_at),

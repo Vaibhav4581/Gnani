@@ -1,7 +1,7 @@
 """A believable day of rescues for the demo reset, written straight to the database: no
 speech calls, so no credits. Every row is synthetic (seed.py's kitchens, volunteers and NGOs).
 
-Today: four finished rescues (two delivered to a shelter, two pickups) and two on the way;
+Today: four finished rescues (two delivered to a shelter, two taken to the drop point) and two on the way;
 yesterday: two more, for the all-time numbers. Each report has the events a real one leaves
 (speech, understanding, read-back, safety check, offers, delivery) with typical latencies, so
 the timelines, voice pipeline panel, rails and "Your rescues" all have something to show.
@@ -24,7 +24,8 @@ from .extractor import Extraction
 from .languages import get_language
 from .matcher import haversine_km, travel_minutes
 from .models import Event, Kitchen, Need, NeedStatus, Ngo, Offer, Report, ReportStatus, Volunteer
-from .offers import Job, alert_text
+from .needs import default_drop_point
+from .offers import Job, alert_text, to_drop_point
 from .seed import nearest_area
 
 YES = {"hi-IN": "haan", "ml-IN": "ഉവ്വ്", "kn-IN": "ಹೌದು", "en-IN": "yes"}
@@ -158,6 +159,8 @@ def add_story(s: Session, now: datetime, story: Story, n: int) -> Report:
                     quantity=float(story.quantity), unit=story.unit, cooked_at=cooked,
                     deadline=deadline_for(cooked), status=story.end, created_at=spoke,
                     veg=story.veg, covered=True, need_id=need.id if need else None)
+    drop = None if need else default_drop_point(s)  # no need: to the drop point, as offers.py
+    report.drop_ngo_id = drop.id if drop else None
     s.add(report)
     s.flush()
 
@@ -185,6 +188,8 @@ def add_story(s: Session, now: datetime, story: Story, n: int) -> Report:
                 distance_km=round(haversine_km(kitchen.lat, kitchen.lng, ngo.lat, ngo.lng), 2))
     else:
         log.add("no_need_match", 0.1, open_needs=0)
+        if drop:
+            log.add("drop_point", 0.1, ngo_id=drop.id, ngo=drop.name)
 
     job = Job(report.id, kitchen.id, kitchen.name, nearest_area(kitchen.lat, kitchen.lng),
               story.dish, float(story.quantity), story.unit, report.deadline, veg=story.veg)
@@ -192,13 +197,16 @@ def add_story(s: Session, now: datetime, story: Story, n: int) -> Report:
         job = replace(job, need_id=need.id, ngo_id=ngo.id, ngo_name=ngo.name,
                       ngo_area=nearest_area(ngo.lat, ngo.lng), needed_by=need.needed_by,
                       people=need.people_count)
+    elif drop:
+        job = to_drop_point(job, drop)
+    to = ngo or drop
     for rank, ask in enumerate(story.asks, 1):
         vol = s.get(Volunteer, ask.volunteer_id)
         km = haversine_km(kitchen.lat, kitchen.lng, vol.lat, vol.lng)
         eta = round(travel_minutes(km, settings.volunteer_speed_kmh, settings.pickup_buffer_minutes))
         sent = log.add("offer_sent", 0.5, volunteer_id=vol.id, rank=rank,
                        distance_km=round(km, 2), eta_min=eta)
-        route = km + (haversine_km(kitchen.lat, kitchen.lng, ngo.lat, ngo.lng) if ngo else 0)
+        route = km + (haversine_km(kitchen.lat, kitchen.lng, to.lat, to.lng) if to else 0)
         _tell(log, alert_text(job, route, get_language(vol.language)), n,
               audience="volunteer", volunteer_id=vol.id)
         timeout = ask.outcome == "EXPIRED"
@@ -221,6 +229,8 @@ def add_story(s: Session, now: datetime, story: Story, n: int) -> Report:
         carrier = story.asks[-1].volunteer_id
         log.add("picked_up", 60 * (14 + n % 9), by="volunteer", volunteer_id=carrier)
         log.add("status", 0.1, status="PICKED_UP")
+    if story.end == ReportStatus.PICKED_UP and drop:
+        log.add("dropped_off", 60 * (11 + n % 7), by="volunteer", ngo=drop.name)
     if story.end == ReportStatus.DELIVERED and ngo:
         log.add("delivery_claimed", 60 * (11 + n % 7), ngo=ngo.name, volunteer_id=carrier)
         heard = ARRIVED[ngo.language]
