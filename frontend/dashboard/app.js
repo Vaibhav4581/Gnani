@@ -343,7 +343,8 @@ function drawExtras(slip, c) {
     const to = el("p", "slip-to");
     if (vol) to.append(icon("bike"), el("span", null, first(vol)));
     to.append(vol ? el("span", null, "→") : "", icon("people"),
-              el("span", null, c.ngo ? short(c.ngo) : "Pickup only, no shelter"));
+              el("span", null, !c.ngo ? "Pickup only, no shelter"
+                : c.drop_off ? `Drop-off: ${short(c.ngo)} (no specific request open)` : short(c.ngo)));
     extra.append(to);
   }
   if (c.declined?.length) {
@@ -461,7 +462,7 @@ function facts(t) {
     ["Location", el("dd", null, f.location || "the kitchen's address")],
     ["Deliver to", el("dd", null, n
       ? `${n.ngo} · ${n.people_count} people · by ${clock(n.needed_by)}${n.veg_only ? " · veg only" : ""}`
-      : "No shelter need: pickup only")],
+      : t.drop_off ? t.drop_off.text : "No shelter need: pickup only")],
   ];
 }
 

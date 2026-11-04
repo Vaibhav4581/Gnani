@@ -1,10 +1,11 @@
 // Volunteer screen: an offer should feel like an incoming phone call.
 // Off duty -> "Start duty" (also unlocks sound) -> on duty, calm -> an offer rings: full-screen
 // haldi, the ticket, ride and drop-off, the spoken alert, and call-style Nahi / Haan buttons (voice
-// works too) -> accepted: pick up and drop off as two stops -> picked up -> delivered (the NGO is
-// then asked to confirm) -> back on duty.
+// works too: once the alert has been spoken the mic opens by itself, or tap it) -> accepted: pick
+// up and drop off as two stops -> picked up -> delivered (the NGO is then asked to confirm) -> back
+// on duty.
 import { $, failureKey, getJson, liveSocket, postJson, store, stored } from "/shared/common.js";
-import { Microphone, bindHoldToTalk, extensionFor } from "/shared/recorder.js";
+import { LISTEN, Microphone, bindTapToTalk, elapsed, extensionFor } from "/assets/recorder.js";
 import { clock, renderKot, renderMiniKot, renderSkeletonMini, setKotStatus } from "/assets/kot.js";
 import { drawMap } from "/assets/map.js";
 import { STRINGS, fill, strings } from "./strings.js";
@@ -23,6 +24,9 @@ const state = {
 let socket = null;
 let audioCtx = null;
 let noticeTimer = null;
+let talk = null;
+let listenTimer = null;  // opens the mic just after the offer has been spoken
+let micClock = null;     // "Sun rahe hain… 0:03" while it records
 const player = new Audio();
 
 // ------------------------------------------------------------------ start
@@ -35,11 +39,11 @@ async function init() {
   $("settings").open = state.mock;
 
   const mic = new Microphone({ select: $("mic"), row: $("mic-row") });
-  bindHoldToTalk($("talk"), {
+  talk = bindTapToTalk($("talk"), {
     mic,
     allowSilence: () => state.mock,
-    onStart: () => listening(state.t.offer.listening, true),
-    onStop: () => listening(null),
+    onStart: () => micOn(true),  // "Sun rahe hain…", tapped or opened after the offer
+    onStop: () => micOn(false),
     onBlob: answerByVoice,
     onProblem: (message, code) => notice(fill(state.t.notice[code] || state.t.notice.server,
                                               { what: message }), "error"),
@@ -55,6 +59,16 @@ async function init() {
   on("picked", markPickedUp);
   on("delivered", markDelivered);
   on("mock-send", () => answerByVoice(new Blob([], { type: "audio/webm" })));
+  // The offer (or "haan ya nahi?") has been spoken: listen for the answer. Never while it speaks.
+  player.addEventListener("playing", () => { $("talk").disabled = true; });
+  for (const ev of ["ended", "pause", "error"]) {
+    player.addEventListener(ev, () => { $("talk").disabled = !state.answering; });
+  }
+  player.addEventListener("ended", () => {
+    listenTimer = setTimeout(() => {
+      if (state.offer && state.answering && player.ended) talk.listen();
+    }, LISTEN.AFTER_VOICE_MS);
+  });
   window.addEventListener("online", updateConn);
   window.addEventListener("offline", updateConn);
   await loadVolunteers();
@@ -152,6 +166,7 @@ function bilingual(btn, path) {
 // One screen at a time: off | on | offer | accepted. The page colour follows it. The area map
 // and today's numbers belong to whichever of off and on is showing.
 function show(screen) {
+  if (screen !== "offer") talk?.cancel();  // the offer is gone: so is its answer
   document.body.dataset.screen = screen;
   const map = $("area-map").parentElement;
   if (screen === "on") {
@@ -283,9 +298,10 @@ function showOffer(msg) {
   const ride = fill(t.offer.ride, { km: s.distance_km, m: s.eta_min });
   $("offer-ride").textContent = s.ngo ? `${ride} · ${fill(t.offer.total, { total: s.ngo.total_km })}` : ride;
   $("offer-drop-row").hidden = !s.ngo;
-  if (s.ngo) {
-    $("offer-drop-label").textContent = t.offer.dropAt;
-    $("offer-drop").textContent = `${s.ngo.name} · ${fill(t.offer.people, { n: s.ngo.people })}`;
+  if (s.ngo) {  // a shelter's request, or the default drop point (no specific request open)
+    $("offer-drop-label").textContent = s.ngo.drop_off ? t.offer.dropOff : t.offer.dropAt;
+    $("offer-drop").textContent = s.ngo.drop_off ? `${s.ngo.name} (${t.offer.noRequest})`
+      : `${s.ngo.name} · ${fill(t.offer.people, { n: s.ngo.people })}`;
   }
   const [one, many] = (t.kot.units || {})[s.unit] || [s.unit, s.unit];
   $("offer-announce").textContent = fill(t.announce, {
@@ -312,8 +328,25 @@ function tick() {
 
 function setAnswering(on) {
   state.answering = on;
+  if (!on) talk?.cancel();  // answered, sending, or out of time
   for (const id of ["yes", "no", "talk", "mock-send"]) $(id).disabled = !on;
   $("ring-icon").classList.toggle("ringing", on);
+}
+
+// The mic is recording: the button turns over to stop, and the line above the answers (always in
+// view, unlike anything further up a phone screen) says it is listening, with a timer.
+function micOn(on) {
+  clearInterval(micClock);
+  $("talk").classList.toggle("is-recording", on);
+  $("talk-icon").setAttribute("href", `${ICONS}#${on ? "stop" : "mic"}`);
+  if (!on) {
+    $("call-note").textContent = state.t.noFine;
+    return;
+  }
+  const since = performance.now();
+  const show = () => { $("call-note").textContent = `${state.t.offer.listening} ${elapsed(since)}`; };
+  show();
+  micClock = setInterval(show, 250);
 }
 
 function listening(word, on = !!word) {
@@ -384,7 +417,8 @@ function drawStops() {
                    detail: fill(t.by, { t: clock(s.deadline) }), done: picked }];
   if (s.ngo) {
     stops.push({ icon: "people", label: t.drop, name: s.ngo.name, point: s.ngo.point,
-                 detail: `${fill(state.t.offer.people, { n: s.ngo.people })} · ${fill(t.neededBy, { t: clock(s.ngo.needed_by) })}`,
+                 detail: s.ngo.drop_off ? `(${state.t.offer.noRequest})`
+                   : `${fill(state.t.offer.people, { n: s.ngo.people })} · ${fill(t.neededBy, { t: clock(s.ngo.needed_by) })}`,
                  done: false });
   }
   $("stops").replaceChildren(...stops.map((stop) => {
@@ -440,14 +474,16 @@ function problem(err) {
   notice(fill(state.t.notice[failureKey(err)], { what: err?.message }), "error");
 }
 
-// The NGO page then asks "Khana aa gaya?" and the NGO's answer marks it delivered.
+// The NGO page then asks "Khana aa gaya?" and the NGO's answer marks it delivered. At the
+// default drop point nobody is asked: the server only notes the hand-over.
 async function markDelivered() {
   const job = state.job;
   if (!job) return;
   $("delivered").disabled = true;
   try {
     await postJson(`/reports/${job.reportId}/delivered?by=volunteer`);
-    backToDuty(fill(state.t.accepted.deliveredThanks, { ngo: job.s.ngo.name }), "success");
+    const thanks = job.s.ngo.drop_off ? state.t.accepted.droppedThanks : state.t.accepted.deliveredThanks;
+    backToDuty(fill(thanks, { ngo: job.s.ngo.name }), "success");
   } catch (err) {
     problem(err);
   } finally {
@@ -459,6 +495,8 @@ async function markDelivered() {
 
 function play(url) {
   if (!url) return;
+  talk?.cancel();  // never record while the app speaks: it would hear itself
+  clearTimeout(listenTimer);
   player.src = url;
   player.play().catch(() => { /* autoplay blocked: "Play again" works */ });
 }

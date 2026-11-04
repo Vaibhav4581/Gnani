@@ -1,5 +1,5 @@
 """Synthetic demo data around Kochi: 4 kitchens (one per language), 8 volunteers,
-3 NGOs/shelters, and (after a demo reset) one open need.
+3 NGOs/shelters, a default drop point, and (after a demo reset) one open need.
 
 Names, phone numbers and exact points are made up. Seeding upserts by id, so the
 demo data is restored on every start.
@@ -60,6 +60,10 @@ NGOS = [
         language="ml-IN"),
     Ngo(id=3, name="Karunya Children's Home", lat=10.0105, lng=76.3505,
         phone="+91-90000-20003", language="en-IN"),
+    # The default partner drop point: food that matches no open need is taken here, so a
+    # volunteer always has somewhere to go. It takes any food, with no request needed.
+    Ngo(id=4, name="Vyttila Community Kitchen", lat=9.9673, lng=76.3183,
+        phone="+91-90000-20004", language="ml-IN", is_default=True),
 ]
 
 

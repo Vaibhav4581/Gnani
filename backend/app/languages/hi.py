@@ -168,6 +168,10 @@ OFFER = OfferPrompts(
                    "pahunchana hai. Kul {distance} kilometre. {safety}{deadline} tak pickup karna hai. "
                    "Kya aap le sakte hain? Haan ya nahi boliye.",
     shelter_word="aashray ghar",
+    alert_drop="Naya pickup! {quantity} {unit} {dish}, {area} se uthana hai. "
+               "Drop-off: {ngo}, {ngo_area} (abhi koi khaas maang nahi hai). Kul {distance} kilometre. "
+               "{safety}{deadline} tak pickup karna hai. Kya aap le sakte hain? Haan ya nahi boliye.",
+    drop_word="community kitchen",
     withdrawn="Kitchen ne yeh pickup cancel kar diya hai. Aapko jaane ki zaroorat nahi.",
     food_safety="Khana {food_type} hai aur dhaka hua hai. ",
     veg_word="veg",

@@ -75,4 +75,4 @@ def test_tts_rejects_bad_names(client):
 
 
 def test_kitchen_page_served(client):
-    assert "Hold to report food" in client.get("/kitchen/").text
+    assert "Tap to report food" in client.get("/kitchen/").text

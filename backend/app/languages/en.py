@@ -125,6 +125,10 @@ OFFER = OfferPrompts(
                    "{ngo} in {ngo_area}, {distance} {km} in total. {safety}Pickup needed {deadline}. "
                    "Can you take it? Say yes or no.",
     shelter_word="the shelter",
+    alert_drop="New pickup! {quantity} {unit} of {dish}. Collect at {area}. "
+               "Drop-off: {ngo} in {ngo_area} (no specific request open), {distance} {km} in total. "
+               "{safety}Pickup needed {deadline}. Can you take it? Say yes or no.",
+    drop_word="the community kitchen",
     withdrawn="The kitchen has cancelled this pickup. You don't need to go.",
     food_safety="The food is {food_type} and covered. ",
     veg_word="vegetarian",

@@ -62,6 +62,8 @@ class Ngo(SQLModel, table=True):
     lng: float
     phone: str
     language: str = "hi-IN"
+    # The partner drop point: food that matches no open need goes here (seed.py).
+    is_default: bool = False
 
 
 class Need(SQLModel, table=True):
@@ -90,6 +92,8 @@ class Report(SQLModel, table=True):
     veg: Optional[bool] = None  # asked at the safety check; unknown never feeds a veg-only need
     covered: Optional[bool] = None  # covered, clean container; never matched unless True
     need_id: Optional[int] = Field(default=None, foreign_key="need.id")
+    # No need fitted: the default drop point (Ngo.is_default) the food is taken to instead.
+    drop_ngo_id: Optional[int] = Field(default=None, foreign_key="ngo.id")
 
 
 class Offer(SQLModel, table=True):

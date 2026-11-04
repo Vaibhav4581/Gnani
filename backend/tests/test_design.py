@@ -147,3 +147,16 @@ def test_no_alert_boxes_or_raw_error_text_left():
         js = (FRONTEND / page / "app.js").read_text(encoding="utf-8")
         assert "alert(" not in js, page
         assert "failureKey" in js, page
+
+
+HOLD_WORDING = ["hold to", "hold the button", "holding the button", "let go", "dabaaye rakh",
+                "chhodne par", "chhod dijiye", "അമർത്തിപ്പിടി", "വിട്ടാൽ", "ಒತ್ತಿ ಹಿಡಿ", "ಬಿಟ್ಟರೆ"]
+
+
+@pytest.mark.parametrize("page", ["kitchen", "ngo", "volunteer"])
+def test_no_hold_to_talk_wording_is_left(page):
+    """The mic is tap to talk (assets/recorder.js): no screen, in any language, says hold or let go."""
+    folder = Path(__file__).resolve().parents[2] / "frontend" / page
+    text = "".join((folder / name).read_text(encoding="utf-8").lower()
+                   for name in ("strings.js", "index.html", "app.js"))
+    assert [w for w in HOLD_WORDING if w in text] == []

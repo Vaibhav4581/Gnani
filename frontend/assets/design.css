@@ -755,6 +755,13 @@ small, .text-small { font-size: var(--text-small); }
 .empty-state .illus { width: 7rem; height: auto; }
 .empty-state p { max-width: 24rem; }
 
+/* ?debug=1 on a page with a mic: what the stop-on-silence rule sees (assets/recorder.js), for
+   tuning it in a real kitchen. Not part of the design: never shown without the flag. */
+.listen-debug { position: fixed; z-index: 50; left: 8px; bottom: 8px; margin: 0; padding: 8px 10px;
+                border-radius: var(--radius-control); background: var(--ink); color: var(--paper);
+                font: 12px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre;
+                opacity: .92; pointer-events: none; }
+
 /* ------------------------------------------------------------------ helping first-timers */
 /* "For example:" under a mic (common.js rotateExamples): every sentence sits in the same grid
    cell, so the box is as tall as the longest and nothing moves when one replaces another. */

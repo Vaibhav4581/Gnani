@@ -22,7 +22,8 @@ engine = make_engine(settings.database_url)
 # Columns added after the first release: (table, column, SQL type). create_all() makes
 # new tables but never alters old ones, so an existing bacha.db gets them here.
 ADDED_COLUMNS = [("report", "veg", "BOOLEAN"), ("report", "need_id", "INTEGER"),
-                 ("report", "covered", "BOOLEAN")]
+                 ("report", "covered", "BOOLEAN"), ("report", "drop_ngo_id", "INTEGER"),
+                 ("ngo", "is_default", "BOOLEAN NOT NULL DEFAULT 0")]
 
 
 def add_missing_columns(eng: Engine) -> list[str]:

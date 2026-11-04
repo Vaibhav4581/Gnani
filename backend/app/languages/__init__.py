@@ -86,6 +86,10 @@ class OfferPrompts:
     # {distance} (total km) {deadline}.
     alert_delivery: str
     shelter_word: str  # said instead of an NGO name this voice can't read
+    # No need fitted, so the food goes to the default drop point: the fields of
+    # alert_delivery, said with "(no specific request open)".
+    alert_drop: str
+    drop_word: str  # said instead of the drop point's name this voice can't read
     withdrawn: str  # the kitchen cancelled: the offer or assignment is off
     # Inserted into both alerts before the deadline: {food_type} is veg_word/non_veg_word.
     food_safety: str

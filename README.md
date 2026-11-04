@@ -45,7 +45,10 @@ On a laptop each screen fits the window without scrolling:
   back. The kitchen page shows the last report so staff know what will be copied.
 - **NGO needs by voice:** a shelter says *"aaj raat 80 logon ke liye khana chahiye"*
   and confirms it. Confirmed food goes to the nearest need it fits: veg rules, enough
-  for at least half the people, and arriving in time.
+  for at least half the people, and arriving in time. When no need fits, it goes to a
+  default partner drop point (Vyttila Community Kitchen, synthetic), so the volunteer
+  always has a destination: *"Drop-off: Vyttila Community Kitchen (no specific request
+  open)"*.
 - **Volunteer calls with fallback:** the soonest volunteer who can carry the food and
   make the deadline hears the offer in their language: where to collect and where to
   deliver. They answer haan / nahi. On "no" or silence the next one is asked.
@@ -141,7 +144,7 @@ stateDiagram-v2
     OFFERED --> ASSIGNED: "haan"
     ASSIGNED --> PICKED_UP: volunteer taps "Picked up"
     PICKED_UP --> DELIVERED: NGO says "haan" (food matched to a need)
-    PICKED_UP --> [*]: no NGO need, rescue ends here
+    PICKED_UP --> [*]: no NGO need (drop point), rescue ends here
     MATCHING --> CANCELLED: kitchen cancels, asked back first
     OFFERED --> CANCELLED
     ASSIGNED --> CANCELLED
@@ -212,6 +215,26 @@ uvicorn app.main:app --reload --port 8000
   phones, run a tunnel such as `ngrok http 8000` or
   `cloudflared tunnel --url http://localhost:8000`.
 
+### The microphone
+
+Tap once and speak; it sends about a second after you stop (tap again to send early). After a
+yes/no question the mic opens by itself for 8 seconds ("Sun rahe hain…"); the Haan / Nahi buttons
+always work too. The rule is in `frontend/assets/recorder.js` (`LISTEN`):
+
+| Setting | Default | Turn it… |
+|---|---|---|
+| `SPEECH_FACTOR` | 1.8 | up if kitchen noise starts recordings or keeps them open; down if quiet speakers aren't heard |
+| `SILENCE_MS` | 1200 | up if it sends while people pause mid-sentence; down for snappier yes/no answers |
+| `MIN_THRESHOLD` | 0.01 | up if a silent room still triggers on tiny sounds |
+| `SPEECH_START_MS` | 150 | up if clatter (pans, ladles) counts as speech |
+| `NO_SPEECH_MS` / `AUTO_NO_SPEECH_MS` | 6000 / 8000 | how long to wait for someone to start |
+
+To tune in a real kitchen, open the page with `?debug=1` (for example
+`/kitchen/?debug=1`): a corner panel shows the room level, the live level and the threshold while
+the mic is open. Try values without editing code: `?debug=1&factor=2.2&silence=1500`
+(`factor`, `silence`, `min`, `start`, `calibrate`, `nospeech`, `auto`, `max`). The rule itself is
+tested in `backend/tests/test_listen.py`.
+
 ### Pages
 
 - **Home:** <http://localhost:8000/>
@@ -230,7 +253,7 @@ uvicorn app.main:app --reload --port 8000
    get offers. For Annapurna Mess's 50 plates, Anjali is asked first and John second.
    Rahul (40 plates) and Arjun (30) are too small, and Deepa is off duty.
 3. Open the NGO page as **Karunya Children's Home**.
-4. On the kitchen page (Annapurna Mess, Hindi), hold the button and say *"pachaas plate
+4. On the kitchen page (Annapurna Mess, Hindi), tap the button and say *"pachaas plate
    veg biryani hai, aath baje bana tha, Kakkanad se"*. Use a clock time from the last
    hour or two: food cooked more than `SAFE_WINDOW_HOURS` (4) ago is past its pickup
    time and is marked EXPIRED. In mock mode, type the sentence in the mock box.
@@ -426,7 +449,10 @@ The state machine is drawn above. Module by module:
     deadline.
 
   The nearest NGO to the kitchen wins. If the food expires before anyone takes
-  it, the need opens again.
+  it, the need opens again. If no need fits, the food goes to the default drop point
+  (`Ngo.is_default`, recorded as `Report.drop_ngo_id`); a need confirmed while the food
+  still waits for a volunteer takes over. Nobody at the drop point confirms arrival, so
+  the rescue ends at `PICKED_UP` and the volunteer's "Delivered" tap is only logged.
 
 - `app/dashboard.py` builds the cards, timelines and latency averages from the
   Report, Offer and Event tables, and never writes to them. Every `log_event()`

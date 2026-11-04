@@ -108,6 +108,11 @@ def refresh_needs(s: Session, now: datetime) -> None:
             changes.mark_needs(s)
 
 
+def default_drop_point(s: Session) -> Optional[Ngo]:
+    """Where food goes when no open need fits (Ngo.is_default; seed.py)."""
+    return s.exec(select(Ngo).where(Ngo.is_default == True).order_by(Ngo.id)).first()  # noqa: E712
+
+
 def open_needs(s: Session) -> list[tuple[Need, Ngo]]:
     return list(s.exec(select(Need, Ngo).where(Need.ngo_id == Ngo.id,
                                                Need.status == NeedStatus.OPEN)).all())
