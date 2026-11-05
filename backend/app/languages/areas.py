@@ -49,6 +49,9 @@ STT_VARIANTS = {
     "thirupanithura": "Thrippunithura", "thirupunithura": "Thrippunithura",
     "त्रिपुनिथुरा": "Thrippunithura", "विटिला": "Vyttila", "वेटिला": "Vyttila",
     "एडापल्ली": "Edappally", "एडप्पाली": "Edappally",
+    # Live run, 4 Nov: the English STT wrote "tripanathura"; its near spellings too.
+    "tripanathura": "Thrippunithura", "thripunithura": "Thrippunithura",
+    "trippunithura": "Thrippunithura", "tripunitura": "Thrippunithura",
 }
 
 

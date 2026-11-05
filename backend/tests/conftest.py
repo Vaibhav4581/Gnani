@@ -20,6 +20,12 @@ os.environ["SAFE_WINDOW_HOURS"] = "4"
 import pytest  # noqa: E402
 
 from app.extractor import RuleExtractor  # noqa: E402
+from app.languages import LANGUAGES, shown  # noqa: E402
+
+
+def on_screen(text: str, code: str = "hi-IN") -> str:
+    """How a screen in this language shows a prompt: Hindi screens are Devanagari."""
+    return shown(text, LANGUAGES[code])
 
 # Thursday 23 Oct 2026, 4 pm: "do baje" resolves to 2 pm the same day.
 NOW = datetime(2026, 10, 23, 16, 0)

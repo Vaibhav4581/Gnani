@@ -27,13 +27,13 @@ const state = {
   report: null,   // { id, status, fields, missing, safety }
   slip: null,
   live: {},       // what the server told us about the pickup: volunteer, eta, ngo, reason
-  cancelAsked: false, busy: false, speaking: false, audio: null, audioUrl: null,
+  cancelAsked: false, askAgain: false, busy: false, speaking: false, audio: null, audioUrl: null,
   printed: false, notice: null, socketState: "reconnecting",
 };
 let talk = null;
 let socket = null;
 let timer = null;
-let listenTimer = null;  // opens the mic just after a yes/no question has been spoken
+let listenTimer = null;  // opens the mic just after the app has asked something
 let stopExamples = () => {};
 
 // Bigger text before anything draws, so the page doesn't jump.
@@ -397,6 +397,7 @@ function followUp(prompt) {
 function showAnswer(data) {
   say(data.text, data.language);
   state.cancelAsked = data.action === "cancel_confirm";
+  state.askAgain = data.action === "unknown";  // "samajh nahi aaya…": listen for the question again
   if (data.volunteer) state.live.volunteer = data.volunteer;
   if (data.eta_min) state.live.eta = data.eta_min;
   if (data.status) state.report.status = data.status;
@@ -508,7 +509,7 @@ function drawSafety() {
 }
 
 function resetReport({ keepLast = false } = {}) {
-  Object.assign(state, { report: null, slip: null, live: {}, cancelAsked: false });
+  Object.assign(state, { report: null, slip: null, live: {}, cancelAsked: false, askAgain: false });
   $("slip-holder").replaceChildren();
   $("stage").classList.remove("has-slip");
   $("say").hidden = true;
@@ -610,19 +611,23 @@ function play(url) {
   for (const ev of ["ended", "pause", "error"]) audio.addEventListener(ev, () => setSpeaking(false));
   audio.addEventListener("ended", () => {
     listenTimer = setTimeout(() => {
-      if (state.audio === audio && !state.busy && !state.speaking && askedYesNo()) talk?.listen();
+      if (state.audio !== audio || state.busy || state.speaking || !awaitingAnswer()) return;
+      state.askAgain = false;  // "samajh nahi aaya…" opens the mic once, not after later news
+      talk?.listen();
     }, LISTEN.AFTER_VOICE_MS);
   });
   audio.play().catch(() => setSpeaking(false));  // autoplay blocked: the replay button stays
 }
 
-// The app has just asked a yes/no question: the read-back ("…Sahi hai?", nothing missing),
-// a safety question, or "cancel karein?". A follow-up like "kitne baje bana tha?" waits for a tap.
-function askedYesNo() {
+// The app has just asked something and waits for the answer, so the mic opens by itself: the
+// read-back ("…Sahi hai?"), a follow-up ("Khana kitne baje bana tha?"), "samajh nahi aaya…" asked
+// again, a safety question, "cancel karein?", or "samajh nahi aaya, 'volunteer kab aayega' ya
+// 'cancel' boliye". It stops on silence, and gives up quietly if nobody speaks (recorder.js).
+function awaitingAnswer() {
   const r = state.report;
   if (!r) return false;
-  if (state.cancelAsked || r.status === "SAFETY_CHECK") return true;
-  return r.status === "CONFIRMING" && !r.missing.length;
+  if (state.cancelAsked || state.askAgain) return true;
+  return r.status === "SAFETY_CHECK" || r.status === "CONFIRMING";
 }
 
 // While the app speaks: a speaker on the ticket, and the mic waits.

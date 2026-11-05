@@ -32,7 +32,7 @@ from .config import now_local, settings
 from .confirm import ReplyKind, Turn, deadline_for, handle_reply, initial_turn
 from .db import engine, get_session, init_db, log_event
 from .extractor import Extraction, get_extractor
-from .languages import LANGUAGES, Language, for_voice, get_language, screen_dish
+from .languages import LANGUAGES, Language, for_voice, get_language, screen_dish, shown
 from .matcher import kitchen_to_ngo_km, travel_minutes
 from .models import (Event, Kitchen, Need, NeedStatus, Ngo, Offer, Report, ReportStatus,
                      Volunteer)
@@ -240,9 +240,9 @@ def _payload(report: Report, transcript: str, turn: Turn, lang: Language,
             "veg": report.veg,
             "covered": report.covered,
         },
-        "dish_shown": screen_dish(report.dish, lang),  # as the read-back writes it
+        "dish_shown": shown(screen_dish(report.dish, lang), lang),  # as the read-back writes it
         "missing": turn.fields.missing_required,
-        "prompt_text": turn.prompt,
+        "prompt_text": shown(turn.prompt, lang),
         "audio_url": audio_url,
         "latency_ms": latencies,
     }
@@ -286,7 +286,8 @@ def _kitchen_json(k: Kitchen) -> dict:
     lang = get_language(k.language)
     return {"id": k.id, "name": k.name, "language": lang.code, "language_name": lang.name,
             "native_name": lang.native_name, "sample": lang.mock_report,
-            "repeat_hint": lang.prompts.repeat_hint, "examples": list(lang.report_examples)}
+            "repeat_hint": shown(lang.prompts.repeat_hint, lang),
+            "examples": [shown(e, lang) for e in lang.report_examples]}
 
 
 @app.get("/kitchens")
@@ -372,7 +373,7 @@ def kitchen_today(kitchen_id: int, session: Session = Depends(get_session)) -> l
     rows = session.exec(select(Report).where(Report.kitchen_id == kitchen_id,
                                              Report.created_at >= start)
                         .order_by(Report.id.desc())).all()
-    return [{"id": r.id, "dish": screen_dish(r.dish, lang), "quantity": r.quantity, "unit": r.unit, "veg": r.veg,
+    return [{"id": r.id, "dish": shown(screen_dish(r.dish, lang), lang), "quantity": r.quantity, "unit": r.unit, "veg": r.veg,
              "status": ReportStatus(r.status).value, "created_at": r.created_at.isoformat()}
             for r in rows]
 
@@ -392,7 +393,7 @@ def kitchen_last_report(kitchen_id: int, session: Session = Depends(get_session)
     if last is None:
         return None
     lang = _kitchen_language(session, kitchen_id)
-    return {"report_id": last.id, "dish": screen_dish(last.dish, lang), "quantity": last.quantity,
+    return {"report_id": last.id, "dish": shown(screen_dish(last.dish, lang), lang), "quantity": last.quantity,
             "unit": last.unit, "location": last.location, "veg": last.veg,
             "cooked_at": _iso(last.cooked_at), "status": last.status.value}
 
@@ -529,7 +530,7 @@ async def ask_about_report(report_id: int, audio_file: Optional[UploadFile] = Fi
     audio_url = await run_in_threadpool(_speak_for, report_id, said.text, lang, latencies)
     return {"report_id": report_id, "status": status, "language": lang.code,
             "transcript": transcript, "intent": intent, "action": action.value,
-            "text": said.text, "volunteer": said.volunteer, "eta_min": said.eta_min,
+            "text": shown(said.text, lang), "volunteer": said.volunteer, "eta_min": said.eta_min,
             "audio_url": audio_url, "latency_ms": latencies}
 
 
@@ -568,7 +569,7 @@ def _rescue_json(session: Session, rescue: "impact.Rescue", lang: Language) -> d
     r = rescue.report
     kitchen = session.get(Kitchen, r.kitchen_id)
     ngo = session.get(Ngo, rescue.need.ngo_id) if rescue.need else None
-    return {"id": r.id, "kitchen": kitchen.name if kitchen else None, "dish": screen_dish(r.dish, lang),
+    return {"id": r.id, "kitchen": kitchen.name if kitchen else None, "dish": shown(screen_dish(r.dish, lang), lang),
             "quantity": r.quantity, "unit": r.unit, "veg": r.veg,
             "status": ReportStatus(r.status).value, "ngo": ngo.name if ngo else None,
             "completed_at": rescue.completed_at.isoformat()}
@@ -654,7 +655,7 @@ async def _answer_offer(offer: Offer, lang: Language, accept: bool,
     audio_url = await run_in_threadpool(_speak_for, offer.report_id, outcome.message, lang,
                                         latencies)
     body = {"offer_id": offer.id, "status": outcome.status.value, "ok": outcome.ok,
-            "text": outcome.message, "audio_url": audio_url, "transcript": transcript,
+            "text": shown(outcome.message, lang), "audio_url": audio_url, "transcript": transcript,
             "latency_ms": latencies}
     if not outcome.ok:  # too late: say who took it, if someone did ("Arjun already took this one")
         body["taken_by"] = await run_in_threadpool(_taken_by, offer.report_id, offer.volunteer_id)
@@ -674,7 +675,7 @@ async def reply_to_offer(offer_id: int, audio_file: UploadFile = File(...),
         audio_url = await run_in_threadpool(_speak_for, offer.report_id, lang.offer.unclear,
                                             lang, latencies)
         return {"offer_id": offer.id, "status": "PENDING", "ok": False, "unclear": True,
-                "text": lang.offer.unclear, "audio_url": audio_url, "transcript": transcript,
+                "text": shown(lang.offer.unclear, lang), "audio_url": audio_url, "transcript": transcript,
                 "latency_ms": latencies}
     return await _answer_offer(offer, lang, accept, transcript, latencies)
 
@@ -742,7 +743,7 @@ def _ngo_json(n: Ngo) -> dict:
     return {"id": n.id, "name": n.name, "language": lang.code, "language_name": lang.name,
             "native_name": lang.native_name, "area": nearest_area(n.lat, n.lng),
             "sample": lang.need.mock_need, "sample_yes": lang.mock_reply,
-            "examples": list(lang.need_examples)}
+            "examples": [shown(e, lang) for e in lang.need_examples]}
 
 
 @app.get("/ngos")
@@ -773,7 +774,7 @@ def _need_payload(need: Need, transcript: str, turn: NeedTurn, lang: Language, a
             "transcript": transcript, "reply_kind": turn.kind.value,
             "fields": {"people_count": need.people_count, "needed_by": _iso(need.needed_by),
                        "veg_only": need.veg_only},
-            "missing": turn.fields.missing_required, "prompt_text": turn.prompt,
+            "missing": turn.fields.missing_required, "prompt_text": shown(turn.prompt, lang),
             "audio_url": audio_url, "latency_ms": latencies}
 
 
@@ -909,14 +910,14 @@ def _need_json(s: Session, need: Need) -> dict:
         kitchen = s.get(Kitchen, report.kitchen_id)
         eta, arriving = _eta_to_ngo(s, report, kitchen, ngo, now_local())
         out["report"] = {"id": report.id, "status": report.status.value,
-                         "dish": screen_dish(report.dish, lang),
+                         "dish": shown(screen_dish(report.dish, lang), lang),
                          "quantity": report.quantity, "unit": report.unit,
                          "kitchen": kitchen.name if kitchen else "?",
                          "volunteer": _accepted_volunteer(s, report.id),
                          "eta_min": eta, "arriving": arriving, "veg": report.veg,
                          "deadline": _iso(report.deadline)}
         if report.status == ReportStatus.PICKED_UP:
-            out["delivery_question"] = {"text": lang.need.delivery_question,
+            out["delivery_question"] = {"text": shown(lang.need.delivery_question, lang),
                                         "audio_url": _question_audio(lang),
                                         "language": lang.code}
     return out
@@ -1035,7 +1036,7 @@ async def report_delivered(report_id: int, by: str = "volunteer") -> dict:
     audio_url = await run_in_threadpool(_question_audio, lang)
     asked = await hub.to_ngo(ngo.id, {
         "type": "delivery_check", "report_id": report.id, "need_id": need.id,
-        "text": lang.need.delivery_question, "audio_url": audio_url, "language": lang.code})
+        "text": shown(lang.need.delivery_question, lang), "audio_url": audio_url, "language": lang.code})
     return {"report_id": report.id, "status": report.status.value, "asked": asked}
 
 
@@ -1087,7 +1088,7 @@ async def delivery_reply(report_id: int, background: BackgroundTasks,
         text = lang.prompts.unclear_prefix + lang.need.delivery_question
         audio_url = await run_in_threadpool(_speak_for, report.id, text, lang, latencies)
         return {"report_id": report.id, "status": report.status.value, "unclear": True,
-                "text": text, "audio_url": audio_url, "transcript": transcript,
+                "text": shown(text, lang), "audio_url": audio_url, "transcript": transcript,
                 "latency_ms": latencies}
     report = await run_in_threadpool(_record_delivery, report.id, delivered, transcript)
     text = lang.need.delivered if delivered else lang.need.not_delivered
@@ -1098,7 +1099,7 @@ async def delivery_reply(report_id: int, background: BackgroundTasks,
             "type": "match", "report_id": report.id, "status": "DELIVERED",
             "text": f"Delivered to {ngo.name}. Thank you!", "ngo": ngo.name})
     return {"report_id": report.id, "status": report.status.value, "delivered": delivered,
-            "text": text, "audio_url": audio_url, "transcript": transcript,
+            "text": shown(text, lang), "audio_url": audio_url, "transcript": transcript,
             "latency_ms": latencies}
 
 
@@ -1153,29 +1154,31 @@ async def dashboard_socket(ws: WebSocket) -> None:
         hub.remove_dashboard(ws)
 
 
-def _reset_demo_data(history: bool) -> None:
+def _reset_demo_data(history: bool, need: bool = True) -> None:
     with Session(engine) as s:
         for table in (Event, Offer, Report, Need):
             s.exec(delete(table))
         seed(s)  # commits
         if history:
             demo_history.add_demo_history(s, now_local())  # a day of rescues so far; commits
-        s.add(demo_need(now_local()))  # one open need, so the full chain shows
+        if need:  # need=false: the shelter asks by voice during the demo instead
+            s.add(demo_need(now_local()))  # one open need, so the full chain shows
         s.commit()
     changes.drain()  # nothing left to report on
     cards.clear_cards()  # report ids start again from 1
 
 
 @app.post("/admin/seed")
-async def reset_demo(confirm: bool = False, history: bool = True) -> dict:
+async def reset_demo(confirm: bool = False, history: bool = True, need: bool = True) -> dict:
     """Delete every report, offer, need and event, restore the demo kitchens, volunteers
     and NGOs, add a synthetic day of rescues so far (demo_history; history=false leaves it
-    empty) and open one demo need (seed.demo_need). No speech calls; the TTS cache is kept,
+    empty) and open one demo need (seed.demo_need; need=false leaves none, for a demo where
+    the shelter asks by voice). No speech calls; the TTS cache is kept,
     so credits already spent stay spent once."""
     if not confirm:
         raise HTTPException(400, "This deletes all reports. Call again with ?confirm=true")
     await offer_engine.shutdown()
-    await run_in_threadpool(_reset_demo_data, history)
+    await run_in_threadpool(_reset_demo_data, history, need)
     await hub.to_all_volunteers({"type": "reset"})
     await hub.to_all_ngos({"type": "reset"})
     await hub.to_all_kitchens({"type": "reset"})

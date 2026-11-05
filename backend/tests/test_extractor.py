@@ -121,6 +121,8 @@ def test_prisma_spellings_of_vyttila(heard, extractor, now):
     ("we have 50 plates of veg pulao left cooked at 12 pm from thirupanithura", "Thrippunithura"),
     ("50 प्लेट बिरयानी दोपहर 12 बजे बनी थी विटिला से", "Vyttila"),
     ("50 प्लेट बिरयानी दोपहर 12 बजे बनी थी एडापल्ली से", "Edappally"),
+    # live run, 4 Nov
+    ("60 plates cooked at 10 pm from tripanathura", "Thrippunithura"),
 ])
 def test_place_names_as_prisma_wrote_them(text, place):
     assert get_extractor().extract(text, datetime(2026, 11, 3, 13)).location == place

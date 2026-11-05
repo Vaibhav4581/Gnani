@@ -277,3 +277,24 @@ def test_alert_names_the_default_drop_point(code, says):
     text = alert_text(DROP, 4.2, get_language(code))
     assert says in text
     assert get_language(code).offer.shelter_word not in text
+
+
+def test_the_answer_time_starts_after_the_spoken_alert(tmp_path, monkeypatch):
+    """A long alert (Malayalam: ~18 s live) must not eat the time to answer."""
+    from app import gnani, mock
+    from app.offers import RING_S, answer_window
+    monkeypatch.setattr(gnani, "TTS_CACHE", tmp_path)
+    (tmp_path / "alert.wav").write_bytes(mock.silent_wav(seconds=18.0))
+    assert answer_window(20, "/tts/alert.wav") == 20 + RING_S + 18.0
+    assert answer_window(20, "/tts/missing.wav") == 20  # unreadable: the plain timeout
+    assert answer_window(20, None) == 20  # TTS failed, the offer went out as text
+
+
+def test_timbre_wav_length_ignores_the_unset_header_size(tmp_path):
+    """Timbre writes 0xFFFFFFFF as the data size; the length comes from the samples."""
+    import struct
+    from app import audio, mock
+    wav = bytearray(mock.silent_wav(seconds=3.0))
+    wav[40:44] = struct.pack("<I", 0xFFFFFFFF)
+    (tmp_path / "t.wav").write_bytes(bytes(wav))
+    assert abs(audio.seconds(tmp_path / "t.wav") - 3.0) < 0.05

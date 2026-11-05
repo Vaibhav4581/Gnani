@@ -8,6 +8,7 @@ from app.extractor import get_extractor
 from app.languages import LANGUAGES
 from app.main import app
 from app.need_extractor import get_need_extractor
+from .conftest import on_screen
 
 NOW = datetime(2026, 11, 2, 16, 30)
 
@@ -34,5 +35,6 @@ def test_examples_are_served_with_each_kitchen_and_shelter():
     with TestClient(app) as client:
         kitchen = client.get("/kitchens").json()[0]
         ngo = client.get("/ngos").json()[0]
-    assert kitchen["examples"] == list(LANGUAGES[kitchen["language"]].report_examples)
-    assert ngo["examples"] == list(LANGUAGES[ngo["language"]].need_examples)
+    assert kitchen["examples"] == [on_screen(e, kitchen["language"])
+                                   for e in LANGUAGES[kitchen["language"]].report_examples]
+    assert ngo["examples"] == [on_screen(e, ngo["language"]) for e in LANGUAGES[ngo["language"]].need_examples]

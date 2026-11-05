@@ -78,9 +78,51 @@ def test_the_kitchen_screens_write_the_dish_as_the_read_back_does():
     assert screen_dish(None, HI) is None
 
 
+def test_a_dish_heard_in_another_script_reaches_each_screen_in_its_own():
+    """Live Prisma writes a Hindi kitchen's dish in Devanagari; a Malayalam or Kannada
+    volunteer gets it in their script (and their voice says it), a Hindi one in Roman."""
+    from app.languages import screen_dish
+    ml, kn = LANGUAGES["ml-IN"], LANGUAGES["kn-IN"]
+    assert screen_dish("वेज बिरयानी", ml) == "വെജ് ബിരിയാണി"
+    assert screen_dish("वेज बिरयानी", kn) == screen_dish("veg biryani", kn)
+    assert screen_dish("ബിരിയാണി", HI) == "biryani"
+    assert screen_dish("ബിരിയാണി", kn) == screen_dish("biryani", kn)
+    assert screen_dish("ಚಪಾತಿ", ml) == screen_dish("chapati", ml)
+
+
+def test_the_malayalam_alert_says_a_hindi_kitchens_dish():
+    from app.languages import script_of, screen_dish
+    ml = LANGUAGES["ml-IN"]
+    assert script_of(screen_dish("वेज बिरयानी", ml)) in ml.scripts
+
+
 def test_english_screens_write_any_heard_dish_in_roman():
     """The English kitchen screen and the dashboard: a dish heard in another script, in Roman."""
     from app.languages import screen_dish
     en = LANGUAGES["en-IN"]
     assert [screen_dish(d, en) for d in ("वेज बिरयानी", "ബിരിയാണി", "ಪಲಾವ್", "veg pulao")] == \
         ["veg biryani", "biryani", "pulao", "veg pulao"]
+
+
+def test_hindi_screens_show_devanagari():
+    """The Hindi kitchen, volunteer and shelter screens are Devanagari, like the voice: every
+    fixed prompt and example comes out with no Roman word left, sentences end with the danda."""
+    from app.languages import shown
+    from app.tts_warm import fixed_phrases
+    lines = fixed_phrases(HI) + list(HI.report_examples) + list(HI.need_examples)
+    for line in lines:
+        assert not re.search(r"[A-Za-z]", shown(line, HI)), shown(line, HI)
+    assert shown("Kakkanad se. Sahi hai?", HI) == "काक्कनाड से। सही है?"
+    assert shown("6.2 km", LANGUAGES["en-IN"]) == "6.2 km"  # other screens unchanged
+
+
+def test_hindi_strings_files_are_devanagari():
+    """No Hinglish left in the Hindi blocks of the pages' strings (code comments aside)."""
+    from pathlib import Path
+    frontend = Path(__file__).resolve().parents[2] / "frontend"
+    for page in ("kitchen", "volunteer", "ngo"):
+        text = (frontend / page / "strings.js").read_text(encoding="utf-8")
+        hindi = text.split('"hi-IN": {', 1)[1].split('\n  "ml-IN": {', 1)[0]
+        strings = re.findall(r'"([^"]*)"', hindi)
+        roman = [s for s in strings if re.search(r"\b(hai|nahi|karein|boliye|kijiye|khana)\b", s, re.I)]
+        assert roman == [], (page, roman)

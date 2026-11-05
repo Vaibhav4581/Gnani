@@ -27,6 +27,7 @@ let noticeTimer = null;
 let talk = null;
 let listenTimer = null;  // opens the mic just after the offer has been spoken
 let micClock = null;     // "Sun rahe hain… 0:03" while it records
+let asking = false;      // the clip now playing asks something (see play)
 const player = new Audio();
 
 // ------------------------------------------------------------------ start
@@ -55,7 +56,7 @@ async function init() {
   on("who-btn", openSheet);
   on("yes", () => answerByButton(true));
   on("no", () => answerByButton(false));
-  on("replay", () => play(state.offer?.audio_url));
+  on("replay", () => play(state.offer?.audio_url, { asks: true }));
   on("picked", markPickedUp);
   on("delivered", markDelivered);
   on("mock-send", () => answerByVoice(new Blob([], { type: "audio/webm" })));
@@ -66,7 +67,7 @@ async function init() {
   }
   player.addEventListener("ended", () => {
     listenTimer = setTimeout(() => {
-      if (state.offer && state.answering && player.ended) talk.listen();
+      if (asking && state.offer && state.answering && player.ended) talk.listen();
     }, LISTEN.AFTER_VOICE_MS);
   });
   window.addEventListener("online", updateConn);
@@ -185,6 +186,7 @@ function show(screen) {
 function unlockAudio() {
   audioCtx = audioCtx || new AudioContext();
   audioCtx.resume();
+  asking = false;  // the unlock is silence, not a question: its end must not open the mic
   player.src = SILENT_WAV;
   player.play().catch(() => { /* still fine: the replay button works */ });
 }
@@ -270,7 +272,7 @@ async function onMessage(msg) {
     showOffer(msg);
     navigator.vibrate?.([400, 200, 400, 200, 400]);  // like a phone ringing, for a phone in a pocket
     await ring();
-    play(msg.audio_url);
+    play(msg.audio_url, { asks: true });
   } else if (msg.type === "reset") {  // demo data was reset from the dashboard
     hideNotice();
     backToDuty(null);
@@ -377,7 +379,7 @@ async function send(url, options) {
     const data = await postJson(url, options);
     $("latency").textContent = Object.entries(data.latency_ms || {})
       .map(([stage, ms]) => `${stage} ${ms} ms`).join(" · ");
-    play(data.audio_url);
+    play(data.audio_url, { asks: !!data.unclear });
     if (data.unclear) {  // "haan or nahi?": the offer stays open
       $("offer-said").textContent = data.text;
       setAnswering(true);
@@ -493,10 +495,13 @@ async function markDelivered() {
 
 // ------------------------------------------------------------------ sound
 
-function play(url) {
+// asks: this clip asks the volunteer something (the offer, "haan ya nahi?"), so the mic opens
+// once it has played. Thanks, "expired" and the like don't.
+function play(url, { asks = false } = {}) {
   if (!url) return;
   talk?.cancel();  // never record while the app speaks: it would hear itself
   clearTimeout(listenTimer);
+  asking = asks;
   player.src = url;
   player.play().catch(() => { /* autoplay blocked: "Play again" works */ });
 }

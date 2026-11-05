@@ -217,8 +217,9 @@ uvicorn app.main:app --reload --port 8000
 
 ### The microphone
 
-Tap once and speak; it sends about a second after you stop (tap again to send early). After a
-yes/no question the mic opens by itself for 8 seconds ("Sun rahe hain…"); the Haan / Nahi buttons
+Tap once and speak; it sends about a second after you stop (tap again to send early). After every
+question the app asks (a read-back, a follow-up like "kitna khana?", or "samajh nahi aaya…"
+asked again) the mic opens by itself for 8 seconds ("Sun rahe hain…"); the Haan / Nahi buttons
 always work too. The rule is in `frontend/assets/recorder.js` (`LISTEN`):
 
 | Setting | Default | Turn it… |
@@ -494,7 +495,8 @@ The state machine is drawn above. Module by module:
   arrive before the deadline. Qualifying volunteers are ranked soonest first.
 - `app/offers.py` runs an asyncio engine that offers to one volunteer at a time. It
   never offers food that isn't confirmed covered:
-  - On "no" or after `OFFER_TIMEOUT_SECONDS`, it moves to the next volunteer.
+  - On "no" or after `OFFER_TIMEOUT_SECONDS`, it moves to the next volunteer. The seconds count
+    from the end of the spoken alert (plus the ring), so a long Malayalam alert still leaves time to answer.
   - A lock per report makes accept, decline and timeout one check-and-set, so a
     late or repeated answer never changes the outcome.
   - It skips volunteers who are offline or already have an open offer.

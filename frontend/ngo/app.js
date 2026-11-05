@@ -60,11 +60,11 @@ async function init() {
   on("confirm-yes", () => sendNeed({ answer: "yes" }));
   on("confirm-no", () => sendNeed({ answer: "no" }));
   on("more", resetNeed);
-  on("replay", () => play(state.audioUrl, readingBack() ? "need" : null));
+  on("replay", () => play(state.audioUrl, state.need?.status === "CONFIRMING" ? "need" : null));
   on("arrival-yes", () => answerDelivery({ answer: "yes" }));
   on("arrival-no", () => answerDelivery({ answer: "no" }));
   on("arrival-replay", () => play(state.delivery?.audio_url, "delivery"));
-  // Never record while the app speaks; once a yes/no question has been spoken, listen for it.
+  // Never record while the app speaks; once it has asked something, listen for the answer.
   player.addEventListener("playing", () => {
     for (const id of ["talk", "arrival-talk"]) $(id).disabled = true;
   });
@@ -77,7 +77,7 @@ async function init() {
     listenTimer = setTimeout(() => {
       if (!player.ended || state.busy) return;
       if (state.asked === "delivery" && state.delivery) arrivalTalk.listen();
-      else if (state.asked === "need" && readingBack()) talk.listen();
+      else if (state.asked === "need" && state.need?.status === "CONFIRMING") talk.listen();
     }, LISTEN.AFTER_VOICE_MS);
   });
   on("ngo-btn", openSheet);
@@ -204,8 +204,8 @@ async function sendNeed({ blob = null, answer = null } = {}) {
   hideNotice();
   try {
     const data = await postJson(url, { body: form });
-    const readBack = data.status === "CONFIRMING" && !(data.missing || []).length;
-    play(data.audio_url, readBack ? "need" : null);  // "…Sahi hai?"; a follow-up waits for a tap
+    // "…Sahi hai?", a follow-up ("Kitne logon ke liye?") or "samajh nahi aaya": listen for it
+    play(data.audio_url, data.status === "CONFIRMING" ? "need" : null);
     await showNeed(data);
     if (data.status === "OPEN") loadNeeds();
     $("latency").textContent = Object.entries(data.latency_ms || {})
@@ -287,8 +287,19 @@ async function loadNeeds() {
   }
   drawFood(needs);
   drawRequests(needs);
+  syncNeedSlip(needs);
   clearInterval(refresh);
   if ($("food-list").children.length) refresh = setInterval(loadNeeds, REFRESH_MS);
+}
+
+// The request just confirmed stays on screen: keep its pill in step ("Khane ka intezaar" ->
+// "Khana mil gaya" -> "Pahunch gaya") as food is matched and delivered.
+function syncNeedSlip(needs) {
+  if (!state.needSlip || !state.need || state.need.status === "CONFIRMING") return;
+  const now = needs.find((x) => x.need_id === state.need.id);
+  if (!now || now.status === state.need.status) return;
+  state.need.status = now.status;
+  updateNeedSlip(state.needSlip, { status: now.status }, { animate: false });
 }
 
 // Tickets for food heading here, soonest first; the arriving one carries the question.
@@ -446,11 +457,6 @@ function play(url, asked = null) {
   state.audioUrl = url;
   player.src = url;
   player.play().catch(() => { /* autoplay blocked: the replay buttons work */ });
-}
-
-// The need has been read back in full and waits for "haan" or a correction.
-function readingBack() {
-  return state.need?.status === "CONFIRMING" && !state.need.missing.length;
 }
 
 function updateMic() {

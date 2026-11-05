@@ -38,8 +38,12 @@ Base URL: https://api.vachana.ai, auth header `X-API-Key-ID: <GNANI_API_KEY>` fr
   misreads Roman Hinglish ("dal chawal", Kochi place names), so for_voice swaps each Roman word for
   its Devanagari spelling (languages/hi_voice.py) while the screen keeps the Roman text. A new
   Hindi prompt word, dish or name goes in hi_voice.py too (test_hindi_voice fails otherwise).
+  Hindi screens are Devanagari (strings.js, kot-words.js): the server keeps its Hinglish prompts
+  and sends every screen text through languages.shown(), which for Hindi is for_voice + danda (।),
+  so the screen shows exactly what the voice was given (test_hindi_screens_show_devanagari).
   Dish names: Prompts.dish_words writes them in the screen's script (hi: Devanagari -> Roman,
-  ml/kn: Latin -> own script; en and the dashboard: any script -> Roman; languages.screen_dish),
+  then shown() -> Devanagari; ml/kn: Latin -> own script, a third script goes through Roman;
+  en and the dashboard: any script -> Roman; languages.screen_dish),
   in read-backs, offers, the kitchen ticket
   (dish_shown) and the rail; the stored Report.dish stays as heard. Offers speak whole kilometres
   (offers.spoken_km: "6.2" is read "6 point 2"). gnani._post retries a 5xx/429/dropped
@@ -75,7 +79,8 @@ RECORDED -> TRANSCRIBED -> EXTRACTED -> CONFIRMING -> CONFIRMED -> SAFETY_CHECK 
   report: say so, and read the next reply as a full report.
 - Corrections during CONFIRMING update only the changed fields.
 - Missing required fields trigger a spoken follow-up question.
-- Offer fallback: next-ranked volunteer on "no" or timeout (OFFER_TIMEOUT_SECONDS).
+- Offer fallback: next-ranked volunteer on "no" or timeout (OFFER_TIMEOUT_SECONDS, counted after
+  the ring and the spoken alert: offers.answer_window; a Malayalam alert runs ~18 s).
   Only volunteers with the page open (WebSocket connected = on duty) are offered; offline
   or busy ones are skipped. Ranking (matcher.py): available, capacity in plates >= quantity
   (1 kg/litre = 4 plates), arrives before the deadline (and the need), soonest first.
@@ -102,9 +107,10 @@ RECORDED -> TRANSCRIBED -> EXTRACTED -> CONFIRMING -> CONFIRMED -> SAFETY_CHECK 
   MIN_THRESHOLD) for SPEECH_START_MS, then SILENCE_MS (1200) quiet sends; no speech in 6 s
   cancels ("Kuch sunai nahi diya…"), 20 s cap, a second tap stops early. All thresholds in
   LISTEN; createSpeechGate is pure and tested in Node (test_listen.py); ?debug=1 shows a panel
-  and takes overrides (&factor=&silence=…). After a yes/no question (kitchen read-back with
-  nothing missing, safety, cancel check; volunteer offer; NGO read-back, "Khana aa gaya?") the
-  page calls listen() AFTER_VOICE_MS after the audio ends: tick + "Sun rahe hain…", gives up
+  and takes overrides (&factor=&silence=…). After every question the app asks (kitchen: anything
+  while CONFIRMING (read-back, follow-ups, "samajh nahi aaya…"), safety, cancel check, an
+  unknown question asked again; volunteer offer and "haan ya nahi?"; NGO: anything while its
+  need is CONFIRMING, "Khana aa gaya?") the page calls listen() AFTER_VOICE_MS after the audio ends: tick + "Sun rahe hain…", gives up
   quietly after 8 s. Never records while audio plays (mic disabled; play() calls cancel()).
 - Buttons are a backup for voice on the kitchen page, and skip STT (no credits): answer=yes|no
   on /reports/{id}/reply, answer=status|yes|no on /reports/{id}/ask, repeat=true on /reports/audio.

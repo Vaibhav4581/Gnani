@@ -375,8 +375,9 @@ setKotStatus(slip, "ASSIGNED");
   stops (judged against the room's own noise), and a second tap stops it early. No holding.
 - **Recording:** add `.is-recording` (a haldi fill, ink text and a pulsing ring) and swap to the `stop` icon.
   The label says what to do: "Bol dijiye… ruk jaane par bhej denge".
-- **Listening by itself:** right after the app asks a yes/no question (the read-back, the safety
-  questions, "cancel karein?", the volunteer's offer, the shelter's read-back and "Khana aa gaya?") the
+- **Listening by itself:** right after the app asks anything (the read-back, a follow-up such as
+  "Khana kitne baje bana tha?", a question asked again because it didn't understand, the safety
+  questions, "cancel karein?", the volunteer's offer, the shelter's questions and "Khana aa gaya?") the
   mic opens on its own with a soft tick and "Sun rahe hain…". If nobody answers in 8 s it closes
   quietly and the Haan / Nahi buttons are still there.
 - **Never while the app speaks:** the mic is disabled while a reply plays, and any sound starting

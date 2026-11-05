@@ -9,6 +9,7 @@ from app.main import app
 from app.models import Event
 
 from .conftest import NOW
+from .conftest import on_screen
 
 
 @pytest.fixture
@@ -31,7 +32,7 @@ def test_report_correction_then_yes_then_safety_check(client):
     rid = body["report_id"]
     assert body["status"] == "CONFIRMING"
     assert body["fields"]["quantity"] == 50 and body["fields"]["unit"] == "plate"
-    assert body["prompt_text"].endswith("Sahi hai?")
+    assert body["prompt_text"].endswith(on_screen("Sahi hai?"))
     assert client.get(body["audio_url"]).headers["content-type"] == "audio/wav"
 
     r = post(client, f"/reports/{rid}/reply", "nahi, saath plate hai").json()
@@ -40,7 +41,7 @@ def test_report_correction_then_yes_then_safety_check(client):
 
     r = post(client, f"/reports/{rid}/reply", "haan sahi hai").json()
     assert r["status"] == "SAFETY_CHECK" and r["reply_kind"] == "yes"
-    assert r["prompt_text"] == "Report confirm ho gayi. Do chhote sawaal. Khana veg hai? Haan ya nahi boliye."
+    assert r["prompt_text"] == on_screen("Report confirm ho gayi. Do chhote sawaal. Khana veg hai? Haan ya nahi boliye.")
     assert r["fields"]["deadline"] is not None and r["safety_question"] == "veg"
 
     r = post(client, f"/reports/{rid}/reply", "haan").json()
@@ -61,7 +62,7 @@ def test_report_correction_then_yes_then_safety_check(client):
 def test_missing_field_gets_follow_up_question(client):
     body = post(client, "/reports/audio", "biryani bacha hai").json()
     assert body["missing"] == ["quantity", "unit", "cooked_time"]
-    assert body["prompt_text"].startswith("Kitna khana")
+    assert body["prompt_text"].startswith(on_screen("Kitna khana"))
 
 
 def test_canned_transcript_when_none_given(client):
