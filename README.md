@@ -11,6 +11,8 @@ kitchen (supply) → volunteer (courier) → NGO or shelter (demand)
 This is a prototype for Gnani AI's Great Indian AI Internship Challenge. All
 kitchens, volunteers, NGOs and phone numbers are synthetic, placed around Kochi.
 
+**Demo video:** [watch the whole chain run by voice](https://drive.google.com/file/d/12cUXhsOdToK_45wKHgcAz0bC6n48m_FJ/view?usp=drive_link)
+
 ## Screenshots
 
 One mock run: Annapurna Mess reports 50 plates in Hinglish, Anjali (Malayalam) says no, John
