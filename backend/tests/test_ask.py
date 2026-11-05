@@ -17,6 +17,7 @@ from app.offers import OfferStatus
 from .conftest import NOW
 from .test_delivery import close_needs, confirm_report, next_of, open_need, post
 from .test_volunteer_api import close_waiting_reports
+from .conftest import on_screen
 
 HI, ML, EN = get_language("hi-IN"), get_language("ml-IN"), get_language("en-IN")
 
@@ -185,7 +186,7 @@ def test_status_question_while_searching(client):
     rid = confirm_report(client)  # nobody on duty
     body = ask(client, rid, "volunteer kab aayega?")
     assert body["intent"] == "status" and body["action"] == "status"
-    assert body["text"] == "Abhi koi volunteer free nahi hai. Koi aate hi bhej denge."
+    assert body["text"] == on_screen("Abhi koi volunteer free nahi hai. Koi aate hi bhej denge.")
     assert body["audio_url"].startswith("/tts/") and "stt" in body["latency_ms"]
     entries = client.get(f"/dashboard/reports/{rid}").json()["entries"]
     assert any(e["text"] == "Kitchen asked: “volunteer kab aayega?”" for e in entries)
@@ -197,7 +198,7 @@ def test_cancel_is_asked_back_and_withdraws_the_open_offer(client):
         offer = next_of(john, "offer")
         asked = ask(client, rid, "rehne do, cancel kar do")
         assert asked["action"] == "cancel_confirm" and asked["status"] == "OFFERED"
-        assert asked["text"] == "Kya yeh pickup cancel karein? Haan ya nahi boliye."
+        assert asked["text"] == on_screen("Kya yeh pickup cancel karein? Haan ya nahi boliye.")
 
         done = ask(client, rid, "haan")
         assert done["action"] == "cancel" and done["status"] == "CANCELLED"
@@ -207,7 +208,7 @@ def test_cancel_is_asked_back_and_withdraws_the_open_offer(client):
     assert offer_rows(rid) == [(7, OfferStatus.WITHDRAWN)]  # nobody else was asked
     late = client.post(f"/offers/{offer['offer_id']}/accept")
     assert late.status_code == 409 and late.json()["detail"]["status"] == "WITHDRAWN"
-    assert ask(client, rid, "kab aayega")["text"] == "Yeh pickup cancel ho chuka hai."
+    assert ask(client, rid, "kab aayega")["text"] == on_screen("Yeh pickup cancel ho chuka hai.")
     assert client.get(f"/dashboard/reports/{rid}").json()["card"]["badge"] == \
         "Cancelled by the kitchen"
 
@@ -220,7 +221,7 @@ def test_assigned_volunteer_is_told_and_the_need_reopens(client):
         offer = next_of(john, "offer")
         client.post(f"/offers/{offer['offer_id']}/accept")
         on_way = ask(client, rid, "volunteer kab aayega?")
-        assert on_way["text"] == "John raaste mein hain. Pahunchne mein lagbhag 25 minute."
+        assert on_way["text"] == on_screen("John raaste mein hain. Pahunchne mein lagbhag 25 minute.")
         ask(client, rid, "cancel")
         ask(client, rid, "haan ji")
         told = next_of(john, "assignment_cancelled")
@@ -238,7 +239,7 @@ def test_no_keeps_the_pickup(client, answer_):
     rid = confirm_report(client)
     ask(client, rid, "cancel")
     kept = ask(client, rid, answer_)
-    assert kept["action"] == "cancel_kept" and kept["text"] == "Theek hai, pickup jaari hai."
+    assert kept["action"] == "cancel_kept" and kept["text"] == on_screen("Theek hai, pickup jaari hai.")
     assert report_status(rid) == ReportStatus.MATCHING
     assert ask(client, rid, "haan")["action"] == "unknown"  # the question was answered
 
@@ -250,7 +251,7 @@ def test_too_late_to_cancel_after_pickup(client):
     client.post(f"/reports/{rid}/picked-up?by=volunteer")
     body = ask(client, rid, "cancel")
     assert body["action"] == "cancel_too_late"
-    assert body["text"] == "Khana pehle hi utha liya gaya hai, ab cancel nahi ho sakta."
+    assert body["text"] == on_screen("Khana pehle hi utha liya gaya hai, ab cancel nahi ho sakta.")
     assert report_status(rid) == ReportStatus.PICKED_UP
 
 

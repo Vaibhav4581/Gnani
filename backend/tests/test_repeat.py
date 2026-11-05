@@ -17,6 +17,7 @@ from app.repeat import is_repeat, without_phrase
 from .conftest import NOW  # 4 pm; the template was cooked at 1 pm the day before
 from .test_delivery import close_needs, post
 from .test_volunteer_api import close_waiting_reports
+from .conftest import on_screen
 
 HI = get_language("hi-IN")
 YESTERDAY = (NOW - timedelta(days=1)).replace(hour=13)
@@ -141,18 +142,18 @@ def test_repeat_with_no_override(client, kitchen):
     assert (f["dish"], f["quantity"], f["unit"], f["location"], f["veg"]) == \
         ("veg biryani", 50, "plate", "Kakkanad", True)
     assert f["cooked_at"] is None and first["missing"] == ["cooked_time"]
-    assert first["prompt_text"] == ("Pichhli report jaisa: 50 plate veg biryani, Kakkanad se. "
-                                    "Khana kitne baje bana tha?")
+    assert first["prompt_text"] == on_screen("Pichhli report jaisa: 50 plate veg biryani, Kakkanad se. "
+                                              "Khana kitne baje bana tha?")
 
     full = reply(client, first["report_id"], "do baje")
-    assert full["prompt_text"] == ("Theek hai. 50 plate veg biryani, dopahar 2 baje bana tha, "
-                                   "Kakkanad se. Khana veg hai. Pickup shaam 6 baje tak hona "
-                                   "chahiye. Sahi hai?")
+    assert full["prompt_text"] == on_screen("Theek hai. 50 plate veg biryani, dopahar 2 baje bana tha, "
+                                             "Kakkanad se. Khana veg hai. Pickup shaam 6 baje tak hona "
+                                             "chahiye. Sahi hai?")
 
     # Veg was read back and confirmed, so the safety check asks only "covered?".
     safety = reply(client, first["report_id"], "haan")
     assert (safety["status"], safety["safety_question"]) == ("SAFETY_CHECK", "covered")
-    assert safety["prompt_text"].startswith("Report confirm ho gayi. Ek chhota sawaal. Khana dhaka")
+    assert safety["prompt_text"].startswith(on_screen("Report confirm ho gayi. Ek chhota sawaal. Khana dhaka"))
     done = reply(client, first["report_id"], "haan")
     assert done["status"] == "MATCHING"
     assert (done["fields"]["veg"], done["fields"]["covered"]) == (True, True)
@@ -166,8 +167,8 @@ def test_repeat_with_overrides_reads_everything_back(client, kitchen):
     f = first["fields"]
     assert (f["dish"], f["quantity"], f["location"], f["veg"]) == ("veg biryani", 30, "Kakkanad", True)
     assert f["cooked_at"] == NOW.replace(hour=13).isoformat() and first["missing"] == []
-    assert first["prompt_text"].startswith("30 plate veg biryani, dopahar 1 baje bana tha")
-    assert "Khana veg hai." in first["prompt_text"]
+    assert first["prompt_text"].startswith(on_screen("30 plate veg biryani, dopahar 1 baje bana tha"))
+    assert on_screen("Khana veg hai.") in first["prompt_text"]
     assert reply(client, first["report_id"], "haan")["safety_question"] == "covered"
 
 
@@ -179,7 +180,7 @@ def test_new_dish_asks_veg_again(client, kitchen):
     assert "veg hai" not in first["prompt_text"]
     safety = reply(client, first["report_id"], "haan")
     assert safety["safety_question"] == "veg"
-    assert safety["prompt_text"].startswith("Report confirm ho gayi. Do chhote sawaal.")
+    assert safety["prompt_text"].startswith(on_screen("Report confirm ho gayi. Do chhote sawaal."))
 
 
 def test_veg_corrected_while_confirming(client, kitchen):
@@ -187,8 +188,8 @@ def test_veg_corrected_while_confirming(client, kitchen):
     rid = say(client, kitchen, "kal jaisa, do baje bana")["report_id"]
     fixed = reply(client, rid, "nahi, non-veg hai")
     assert fixed["fields"]["veg"] is False and fixed["status"] == "CONFIRMING"
-    assert fixed["prompt_text"].startswith("Theek hai, badal diya. ")
-    assert "Khana non-veg hai." in fixed["prompt_text"]
+    assert fixed["prompt_text"].startswith(on_screen("Theek hai, badal diya. "))
+    assert on_screen("Khana non-veg hai.") in fixed["prompt_text"]
     assert reply(client, rid, "haan")["safety_question"] == "covered"
 
 
@@ -196,12 +197,12 @@ def test_no_previous_report(client, kitchen):
     first = say(client, kitchen, "kal jaisa")
     assert (first["repeat"], first["repeat_of"], first["status"]) == \
         ("nothing_to_copy", None, "CONFIRMING")
-    assert first["prompt_text"] == HI.prompts.no_previous
+    assert first["prompt_text"] == on_screen(HI.prompts.no_previous)
     assert first["fields"]["dish"] is None and len(first["missing"]) == 4
     # The next thing said is read as the full report, through the usual loop.
     full = reply(client, first["report_id"], "pachaas plate veg biryani, do baje bana, Kakkanad se")
     assert full["missing"] == [] and full["fields"]["veg"] is None
-    assert full["prompt_text"].startswith("Theek hai. 50 plate veg biryani, dopahar 2 baje")
+    assert full["prompt_text"].startswith(on_screen("Theek hai. 50 plate veg biryani, dopahar 2 baje"))
     assert reply(client, full["report_id"], "haan")["safety_question"] == "veg"
 
 
@@ -227,12 +228,12 @@ def test_last_report_card(client, kitchen):
     assert client.get(f"/kitchens/{kitchen}/last-report").json() is None
     tid = template(kitchen)
     card = client.get(f"/kitchens/{kitchen}/last-report").json()
-    assert card == {"report_id": tid, "dish": "veg biryani", "quantity": 50, "unit": "plate",
+    assert card == {"report_id": tid, "dish": on_screen("veg biryani"), "quantity": 50, "unit": "plate",
                     "location": "Kakkanad", "veg": True, "cooked_at": YESTERDAY.isoformat(),
                     "status": "DELIVERED"}
     assert client.get("/kitchens/9999/last-report").status_code == 404
     hints = {k["id"]: k["repeat_hint"] for k in client.get("/kitchens").json()}
-    assert hints[kitchen] == "kal jaisa"
+    assert hints[kitchen] == on_screen("kal jaisa")
 
 
 def test_dashboard_timeline_says_what_was_copied(client, kitchen):
@@ -266,14 +267,14 @@ def test_repeat_in_each_language(client, kitchen, code, phrase, copied, time, ve
     assert (first["fields"]["dish"], first["fields"]["quantity"]) == ("veg biryani", 30)
     assert first["missing"] == ["cooked_time"]
     lang = get_language(code)
-    assert first["prompt_text"].startswith(copied)
-    assert first["prompt_text"].endswith(lang.prompts.follow_ups["cooked_time"])
+    assert first["prompt_text"].startswith(on_screen(copied, code))
+    assert first["prompt_text"].endswith(on_screen(lang.prompts.follow_ups["cooked_time"], code))
 
     full = reply(client, first["report_id"], time)
     assert full["missing"] == [] and full["fields"]["cooked_at"] == NOW.replace(hour=14).isoformat()
-    assert veg_note in full["prompt_text"]
+    assert on_screen(veg_note, code) in full["prompt_text"]
     safety = reply(client, first["report_id"], lang.mock_reply)
-    assert safety["prompt_text"] == lang.safety.intro_one + lang.safety.covered_question
+    assert safety["prompt_text"] == on_screen(lang.safety.intro_one + lang.safety.covered_question, code)
 
 
 @pytest.mark.parametrize("code", sorted(LANGUAGES))
@@ -282,7 +283,7 @@ def test_nothing_to_copy_in_each_language(client, kitchen, code):
     phrase = LANGUAGES[code].lexicon.repeat_phrases[0]
     first = say(client, kitchen, phrase)
     assert first["repeat"] == "nothing_to_copy"
-    assert first["prompt_text"] == LANGUAGES[code].prompts.no_previous
+    assert first["prompt_text"] == on_screen(LANGUAGES[code].prompts.no_previous, code)
 
 
 @pytest.mark.parametrize("code", sorted(LANGUAGES))

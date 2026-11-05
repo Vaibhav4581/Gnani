@@ -72,4 +72,15 @@ NAME_WORDS = {
     "karunya": "करुण्या", "children's": "चिल्ड्रन्स",
 }
 
-VOICE_SPELLINGS = {**PROMPT_WORDS, **DISH_WORDS, **NAME_WORDS}
+# Counts and clock words people say (the screen's example sentences use them); Devanagari
+# screens show them as the voice says them.
+NUMBER_WORDS = {
+    "teen": "तीन", "char": "चार", "chaar": "चार", "paanch": "पाँच", "chhe": "छह", "chhah": "छह",
+    "saat": "सात", "aath": "आठ", "nau": "नौ", "das": "दस", "gyarah": "ग्यारह", "barah": "बारह",
+    "pandrah": "पंद्रह", "bees": "बीस", "pachees": "पच्चीस", "tees": "तीस", "chalees": "चालीस",
+    "chaalis": "चालीस", "pachaas": "पचास", "pachas": "पचास", "sattar": "सत्तर",
+    "assi": "अस्सी", "nabbe": "नब्बे", "sau": "सौ",
+    "bachchon": "बच्चों", "bachche": "बच्चे",
+}
+
+VOICE_SPELLINGS = {**PROMPT_WORDS, **DISH_WORDS, **NAME_WORDS, **NUMBER_WORDS}

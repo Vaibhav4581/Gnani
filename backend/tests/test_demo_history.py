@@ -62,3 +62,15 @@ def test_reset_fills_a_day_without_touching_the_live_demo():
                 for n in s.exec(select(Need).where(Need.status == NeedStatus.OPEN)).all():
                     n.status = NeedStatus.EXPIRED
                 s.commit()
+
+
+def test_reset_without_the_demo_need_leaves_the_shelter_to_ask_by_voice():
+    with TestClient(app) as client:
+        assert client.post("/admin/seed?confirm=true&need=false").json() == {"ok": True}
+        assert not [n for n in client.get("/needs").json() if n["status"] == "OPEN"]
+        assert client.get("/impact").json()["today"]["rescues"] == 4  # the history is still there
+        client.post("/admin/seed?confirm=true&history=false")
+        with Session(engine) as s:  # leave nothing open for other tests
+            for n in s.exec(select(Need).where(Need.status == NeedStatus.OPEN)).all():
+                n.status = NeedStatus.EXPIRED
+            s.commit()

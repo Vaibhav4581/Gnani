@@ -86,7 +86,7 @@ def test_reconnecting_volunteer_gets_the_open_offer_again(client):
         offer = first.receive_json()
     with client.websocket_connect("/ws/volunteer/1") as again:
         resent = again.receive_json()
-        assert resent["offer_id"] == offer["offer_id"] and resent["timeout_s"] <= 5.0
+        assert resent["offer_id"] == offer["offer_id"] and resent["timeout_s"] <= offer["timeout_s"]
         client.post(f"/offers/{offer['offer_id']}/decline")
 
 

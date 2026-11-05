@@ -195,10 +195,21 @@ _ROMAN_WORD = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)*(?:-[A-Za-z]+)*")
 
 def screen_dish(dish: Optional[str], lang: Language) -> Optional[str]:
     """A dish as this language's screen and read-back write it (Prompts.dish_words):
-    "वेज बिरयानी" -> "veg biryani" in Hindi, "pulao" -> "ಪುಲಾವ್" in Kannada."""
+    "वेज बिरयानी" -> "veg biryani" in Hindi, "pulao" -> "ಪುಲಾವ್" in Kannada.
+    A word heard in a third script goes through Roman (the English table reads any script):
+    a Hindi kitchen's "वेज बिरयानी" is "വെജ് ബിരിയാണി" for a Malayalam volunteer, who would
+    otherwise see Devanagari and hear only food_word (seen live, 4 Nov)."""
     if not dish:
         return dish
-    return " ".join(lang.prompts.dish_words.get(w.lower(), w) for w in dish.split())
+    own, roman = lang.prompts.dish_words, LANGUAGES["en-IN"].prompts.dish_words
+
+    def word(w: str) -> str:
+        w = w.lower()
+        if w in own:
+            return own[w]
+        via = roman.get(w, w)
+        return own.get(via, via)
+    return " ".join(word(w) for w in dish.split())
 
 
 def for_voice(text: str, lang: Language) -> str:
@@ -210,6 +221,19 @@ def for_voice(text: str, lang: Language) -> str:
         word = m.group()
         return lang.voice_spellings.get(word.lower().replace("’", "'"), word)
     return _ROMAN_WORD.sub(swap, text)
+
+
+def shown(text: Optional[str], lang: Language) -> Optional[str]:
+    """What a screen in this language shows for a line the app speaks (or a dish name).
+    The Hindi screens are Devanagari, like the voice, so a Hinglish prompt is shown exactly
+    as the voice was given it (hi_voice spellings), ending sentences with the danda (।).
+    Other languages are unchanged."""
+    if not text or not lang.voice_spellings:
+        return text
+    return _SENTENCE_END.sub("।", for_voice(text, lang))
+
+
+_SENTENCE_END = re.compile(r"(?<!\d)\.(?=\s|$)")  # "से." -> "से।", never "6.2"
 
 
 def with_voice(lang: Language, voices: dict[str, str]) -> Language:

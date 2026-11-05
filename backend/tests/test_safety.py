@@ -18,6 +18,7 @@ from .conftest import NOW  # 4 pm; "do baje" = 2 pm, so the pickup deadline is 6
 from .test_delivery import close_needs, confirm_report, next_of, open_need, post
 from .test_offers import make_engine, make_report
 from .test_volunteer_api import close_waiting_reports
+from .conftest import on_screen
 
 REPORT = "pachaas plate veg biryani, do baje bana, Kakkanad se"
 HI = get_language("hi-IN")
@@ -90,15 +91,15 @@ def events(rid) -> list[str]:
 def test_two_questions_then_matching(client):
     rid, body = confirmed(client)
     assert body["status"] == "SAFETY_CHECK" and body["safety_question"] == "veg"
-    assert body["prompt_text"] == "Report confirm ho gayi. Do chhote sawaal. Khana veg hai? Haan ya nahi boliye."
+    assert body["prompt_text"] == on_screen("Report confirm ho gayi. Do chhote sawaal. Khana veg hai? Haan ya nahi boliye.")
 
     veg = reply(client, rid, "haan, veg hai")
     assert veg["fields"]["veg"] is True and veg["safety_question"] == "covered"
-    assert veg["prompt_text"] == "Theek hai. Khana dhaka hua aur saaf bartan mein hai? Haan ya nahi boliye."
+    assert veg["prompt_text"] == on_screen("Theek hai. Khana dhaka hua aur saaf bartan mein hai? Haan ya nahi boliye.")
 
     done = reply(client, rid, "haan")
     assert done["status"] == "MATCHING" and done["fields"]["covered"] is True
-    assert done["prompt_text"] == "Dhanyavaad! Ab hum volunteer dhoondh rahe hain."
+    assert done["prompt_text"] == on_screen("Dhanyavaad! Ab hum volunteer dhoondh rahe hain.")
     assert done["reply_kind"] == "safety"
     assert events(rid).count("safety") == 2
     card = client.get(f"/dashboard/reports/{rid}").json()["card"]
@@ -115,9 +116,9 @@ def test_cover_it_first_loop(client):
     reply(client, rid, "haan")
     no = reply(client, rid, "nahi")
     assert no["status"] == "SAFETY_CHECK" and no["fields"]["covered"] is False
-    assert no["prompt_text"] == "Kripya khana dhak dijiye, phir haan boliye."
+    assert no["prompt_text"] == on_screen("Kripya khana dhak dijiye, phir haan boliye.")
     unclear = reply(client, rid, "ek minute")
-    assert unclear["prompt_text"] == "Maaf kijiye, samajh nahi aaya. Kripya khana dhak dijiye, phir haan boliye."
+    assert unclear["prompt_text"] == on_screen("Maaf kijiye, samajh nahi aaya. Kripya khana dhak dijiye, phir haan boliye.")
     assert reply(client, rid, "abhi nahi")["status"] == "SAFETY_CHECK"
     badge = client.get(f"/dashboard/reports/{rid}").json()["card"]["badge"]
     assert badge == "Waiting for the food to be covered"
@@ -130,10 +131,10 @@ def test_no_questions_once_the_deadline_has_passed(client, clock):
     clock[0] = NOW + timedelta(hours=3)  # 7 pm: "do baje" food was due by 6 pm
     rid, body = confirmed(client)
     assert body["status"] == "EXPIRED" and body["safety_question"] is None
-    assert body["prompt_text"] == HI.safety.expired
+    assert body["prompt_text"] == on_screen(HI.safety.expired)
     assert post(client, f"/reports/{rid}/reply", "haan").status_code == 409
     asked = post(client, f"/reports/{rid}/ask", "kab aayega").json()
-    assert asked["text"] == HI.ask.expired and asked["status"] == "EXPIRED"
+    assert asked["text"] == on_screen(HI.ask.expired) and asked["status"] == "EXPIRED"
     card = client.get(f"/dashboard/reports/{rid}").json()["card"]
     assert card["badge"] == "Expired: the pickup time had passed"
 
@@ -144,7 +145,7 @@ def test_deadline_passing_while_covering_expires_it(client, clock):
     reply(client, rid, "nahi")
     clock[0] = NOW + timedelta(hours=2, minutes=5)  # 6:05 pm
     late = reply(client, rid, "haan")
-    assert late["status"] == "EXPIRED" and late["prompt_text"] == HI.safety.expired
+    assert late["status"] == "EXPIRED" and late["prompt_text"] == on_screen(HI.safety.expired)
     assert "offer_sent" not in events(rid)
 
 

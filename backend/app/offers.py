@@ -7,7 +7,8 @@ matched to an open NGO need if one fits (matcher.rank_needs); then every route r
 volunteer -> kitchen -> NGO. With no fitting need, the food goes to the default drop
 point (Ngo.is_default) instead, so the volunteer always has a destination.
 A "no" or no answer within
-OFFER_TIMEOUT_SECONDS moves on to the next-ranked volunteer. Everything runs on
+OFFER_TIMEOUT_SECONDS (counted after the ring and the spoken alert, see answer_window)
+moves on to the next-ranked volunteer. Everything runs on
 the server's event loop, and one lock per report makes accept, decline and
 timeout a single check-and-set on the offer's PENDING status, so a late or
 repeated answer can never undo a decision.
@@ -24,12 +25,12 @@ from typing import Callable, Optional
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
-from . import changes, gnani
+from . import audio, changes, gnani
 from .config import now_local, settings
 from .confirm import fmt_quantity, has_no, has_yes
 from .db import engine as default_db
 from .db import log_event
-from .languages import Language, for_voice, get_language, screen_dish, script_of
+from .languages import Language, for_voice, get_language, screen_dish, script_of, shown
 from .matcher import Candidate, NeedMatch, rank_needs, rank_volunteers
 from .models import Event, Kitchen, Need, NeedStatus, Ngo, Offer, Report, ReportStatus, Volunteer
 from .needs import default_drop_point, open_needs, refresh_needs
@@ -49,6 +50,19 @@ class OfferStatus(str, Enum):
 
 ACTIVE = (ReportStatus.CONFIRMED, ReportStatus.MATCHING, ReportStatus.OFFERED)
 CANCELLABLE = ACTIVE + (ReportStatus.ASSIGNED,)  # once picked up, it's too late
+RING_S = 1.5  # the volunteer page rings (two rings, about 1.1 s) before it plays the alert
+
+
+def answer_window(timeout: float, audio_url: Optional[str]) -> float:
+    """Seconds an offer stays open: the ring, the spoken alert, then `timeout` to answer.
+    A Malayalam alert runs about 18 s (live, 4 Nov), so a flat 20 s left almost no time."""
+    if not audio_url:
+        return timeout
+    try:
+        spoken = audio.seconds(gnani.TTS_CACHE / audio_url.rsplit("/", 1)[-1])
+    except Exception:  # a missing or unreadable file: the plain timeout still applies
+        return timeout
+    return round(timeout + RING_S + spoken, 1)
 
 
 @dataclass(frozen=True)
@@ -347,14 +361,15 @@ class OfferEngine:
 
         text = alert_text(job, cand.total_km, lang)
         audio_url = await self._tts(job.report_id, text, lang, vol.id)
+        window = await asyncio.to_thread(answer_window, self.timeout, audio_url)
         loop = asyncio.get_running_loop()
         waiter = loop.create_future()
         self._waiters[offer_id] = waiter
         msg = {
             "type": "offer", "offer_id": offer_id, "report_id": job.report_id,
-            "language": lang.code, "text": text, "audio_url": audio_url,
-            "timeout_s": self.timeout,
-            "summary": {"dish": screen_dish(job.dish, lang), "quantity": job.quantity, "unit": job.unit,
+            "language": lang.code, "text": shown(text, lang), "audio_url": audio_url,
+            "timeout_s": window,
+            "summary": {"dish": shown(screen_dish(job.dish, lang), lang), "quantity": job.quantity, "unit": job.unit,
                         "kitchen": job.kitchen_name, "area": job.area,
                         "distance_km": round(cand.distance_km, 1),
                         "eta_min": round(cand.eta_minutes),
@@ -363,12 +378,12 @@ class OfferEngine:
                         "kitchen_point": list(job.kitchen_point) if job.kitchen_point else None,
                         "ngo": self._ngo_summary(job, cand)},
         }
-        self._live[offer_id] = (vol.id, msg, loop.time() + self.timeout)
+        self._live[offer_id] = (vol.id, msg, loop.time() + window)
         await self.hub.to_volunteer(vol.id, msg)
         await self._tell_kitchen(job, "OFFERED", f"Asking {vol.name} ({cand.distance_km:.1f} km away)…",
                                  volunteer=vol.name, ngo=job.ngo_name)
         try:
-            await asyncio.wait_for(asyncio.shield(waiter), self.timeout)
+            await asyncio.wait_for(asyncio.shield(waiter), window)
         except asyncio.TimeoutError:
             await self._expire(offer_id, job.report_id, vol.id, lang)
         finally:
@@ -496,13 +511,13 @@ class OfferEngine:
             lang = langs[vid]
             await self.hub.to_volunteer(vid, {
                 "type": "offer_closed", "offer_id": offer_id, "status": OfferStatus.WITHDRAWN.value,
-                "text": lang.offer.withdrawn,
+                "text": shown(lang.offer.withdrawn, lang),
                 "audio_url": await self._tts(report_id, lang.offer.withdrawn, lang, vid)})
         if outcome.assigned_volunteer is not None:
             lang = langs[outcome.assigned_volunteer]
             await self.hub.to_volunteer(outcome.assigned_volunteer, {
                 "type": "assignment_cancelled", "report_id": report_id,
-                "text": lang.offer.withdrawn,
+                "text": shown(lang.offer.withdrawn, lang),
                 "audio_url": await self._tts(report_id, lang.offer.withdrawn, lang,
                                              outcome.assigned_volunteer)})
         if outcome.ngo_id is not None:
@@ -527,7 +542,7 @@ class OfferEngine:
         audio_url = await self._tts(report_id, lang.offer.expired, lang, volunteer_id)
         await self.hub.to_volunteer(volunteer_id, {
             "type": "offer_closed", "offer_id": offer_id, "status": OfferStatus.EXPIRED.value,
-            "text": lang.offer.expired, "audio_url": audio_url})
+            "text": shown(lang.offer.expired, lang), "audio_url": audio_url})
 
     # ------------------------------------------------------------ helpers
 

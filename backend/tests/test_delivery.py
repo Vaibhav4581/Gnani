@@ -14,6 +14,7 @@ from app.offers import OfferStatus
 
 from .conftest import NOW  # 4 pm
 from .test_volunteer_api import close_waiting_reports
+from .conftest import on_screen
 
 AUDIO = {"audio_file": ("a.webm", b"x", "audio/webm")}
 REPORT = "pachaas plate veg biryani, do baje bana, Kakkanad se"  # kitchen 1, deadline 6 pm
@@ -80,11 +81,11 @@ def test_ngo_asks_for_food_by_voice(client):
     assert first["language"] == "hi-IN" and first["status"] == "CONFIRMING"
     assert first["fields"] == {"people_count": 80, "needed_by": "2026-10-23T20:00:00",
                                "veg_only": False}
-    assert first["prompt_text"].startswith("80 logon ke liye khana, raat 8 baje tak")
+    assert first["prompt_text"].startswith(on_screen("80 logon ke liye khana, raat 8 baje tak"))
     fix = post(client, f"/needs/{first['need_id']}/reply", "nahi, sirf veg").json()
     assert fix["reply_kind"] == "correction" and fix["fields"]["veg_only"] is True
     done = post(client, f"/needs/{first['need_id']}/reply", "haan").json()
-    assert done["status"] == "OPEN" and done["prompt_text"].startswith("Dhanyavaad")
+    assert done["status"] == "OPEN" and done["prompt_text"].startswith(on_screen("Dhanyavaad"))
     assert first["need_id"] in [n["need_id"] for n in client.get("/needs?status=open").json()]
     again = post(client, f"/needs/{first['need_id']}/reply", "haan")
     assert again.status_code == 409
@@ -93,7 +94,7 @@ def test_ngo_asks_for_food_by_voice(client):
 def test_missing_people_count_is_asked_for(client):
     body = post(client, "/needs/audio", "raat 8 baje tak khana chahiye", ngo_id=1).json()
     assert body["missing"] == ["people_count"]
-    assert body["prompt_text"] == "Kitne logon ke liye khana chahiye?"
+    assert body["prompt_text"] == on_screen("Kitne logon ke liye khana chahiye?")
 
 
 def test_ngos_listed(client):

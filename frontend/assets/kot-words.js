@@ -2,12 +2,12 @@
 // screen that draws a ticket. English is empty: the slip's defaults (WORDS in kot.js) are English.
 
 export const KOT_WORDS = {
-  "hi-IN": { labels: { food: "Khana", cooked_at: "Bana", deadline: "Pickup tak" },
-           units: { plate: ["plate", "plate"], kg: ["kilo", "kilo"], litre: ["litre", "litre"],
-                    box: ["dabba", "dabbe"] },
-           left: (h, m) => (!h ? `${m} min bache` : m ? `${h} ghante ${m} min bache` : `${h} ghante bache`),
-           passed: "Samay nikal gaya", notHeard: "abhi suna nahi", speaking: "Awaaz chal rahi hai",
-           report: "Khana report" },
+  "hi-IN": { labels: { food: "खाना", cooked_at: "बना", deadline: "पिकअप तक" },
+           units: { plate: ["प्लेट", "प्लेट"], kg: ["किलो", "किलो"], litre: ["लीटर", "लीटर"],
+                    box: ["डब्बा", "डब्बे"] },
+           left: (h, m) => (!h ? `${m} मिनट बचे` : m ? `${h} घंटे ${m} मिनट बचे` : `${h} घंटे बचे`),
+           passed: "समय निकल गया", notHeard: "अभी सुना नहीं", speaking: "आवाज़ चल रही है",
+           report: "खाना रिपोर्ट" },
   "ml-IN": { labels: { food: "ഭക്ഷണം", cooked_at: "ഉണ്ടാക്കിയത്", deadline: "പിക്കപ്പ്" },
            units: { plate: ["പ്ലേറ്റ്", "പ്ലേറ്റ്"], kg: ["കിലോ", "കിലോ"], litre: ["ലിറ്റർ", "ലിറ്റർ"],
                     box: ["ബോക്സ്", "ബോക്സ്"] },

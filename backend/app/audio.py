@@ -85,6 +85,13 @@ def to_telephony(src: Path) -> Path:
     return dst
 
 
+def seconds(wav: Path) -> float:
+    """How long a clip plays. Timbre leaves the WAV header's data size unset (0xFFFFFFFF),
+    so this reads the samples instead of trusting the header."""
+    with open(wav, "rb") as f:
+        return len(AudioSegment.from_file(f, format="wav")) / 1000
+
+
 def voiced_ms(wav: Path) -> int:
     """Milliseconds louder than SILENCE_THRESH_DBFS (a dead or muted mic gives ~0)."""
     with open(wav, "rb") as f:  # pydub leaves a path it opened itself unclosed
